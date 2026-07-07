@@ -1,0 +1,44 @@
+@import 'tailwindcss';
+
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../storage/framework/views/*.php';
+
+@theme {
+    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+        'Segoe UI Symbol', 'Noto Color Emoji';
+
+    /* Brand palette (emerald/teal) */
+    --color-brand-50: oklch(0.979 0.021 166);
+    --color-brand-100: oklch(0.95 0.052 163);
+    --color-brand-300: oklch(0.845 0.143 164);
+    --color-brand-500: oklch(0.696 0.17 162);
+    --color-brand-600: oklch(0.596 0.145 163);
+    --color-brand-700: oklch(0.508 0.118 165);
+}
+
+@layer base {
+    body {
+        background-color: #f5f7f6;
+        background-image:
+            radial-gradient(ellipse 80% 50% at 50% -10%, color-mix(in oklch, var(--color-brand-500) 14%, transparent), transparent),
+            radial-gradient(ellipse 55% 45% at 100% 0%, color-mix(in oklch, var(--color-teal-400) 10%, transparent), transparent);
+        background-attachment: fixed;
+        background-repeat: no-repeat;
+    }
+}
+
+/* Subtle entrance animation for cards */
+@keyframes rise {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.animate-rise {
+    animation: rise 0.4s ease both;
+}
