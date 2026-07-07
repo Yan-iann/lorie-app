@@ -13,7 +13,7 @@ RUN npm run build
 # ─────────────────────────────────────────────────────────────
 # Stage 2 — runtime: PHP-FPM + Nginx in a single container
 # ─────────────────────────────────────────────────────────────
-FROM php:8.3-fpm-alpine AS app
+FROM php:8.4-fpm-alpine AS app
 
 # System packages + PHP extensions the app needs (Postgres, GD, intl, zip…)
 RUN apk add --no-cache \
