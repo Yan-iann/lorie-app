@@ -10,10 +10,14 @@
     /* Brand palette (emerald/teal) */
     --color-brand-50: oklch(0.979 0.021 166);
     --color-brand-100: oklch(0.95 0.052 163);
+    --color-brand-200: oklch(0.905 0.093 164);
     --color-brand-300: oklch(0.845 0.143 164);
+    --color-brand-400: oklch(0.765 0.177 163);
     --color-brand-500: oklch(0.696 0.17 162);
     --color-brand-600: oklch(0.596 0.145 163);
     --color-brand-700: oklch(0.508 0.118 165);
+    --color-brand-800: oklch(0.432 0.095 166);
+    --color-brand-900: oklch(0.378 0.077 167);
 }
 
 @layer base {
@@ -41,4 +45,19 @@
 
 .animate-rise {
     animation: rise 0.4s ease both;
+}
+
+/* Respect the iOS/Android home-indicator area for the fixed mobile tab bar */
+.pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* Hide number-input spinners for a cleaner look */
+input[type='number']::-webkit-outer-spin-button,
+input[type='number']::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+input[type='number'] {
+    -moz-appearance: textfield;
 }

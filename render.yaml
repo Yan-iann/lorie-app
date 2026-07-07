@@ -1,0 +1,71 @@
+# Render Blueprint — https://render.com/docs/blueprint-spec
+#
+# Deploys the Laravel app as a Docker web service on Render's free plan.
+# The database lives on Neon (free Postgres). Values marked `sync: false`
+# are secrets: Render will prompt you for them (or set them in the dashboard).
+#
+# Note: Render injects its own $PORT at runtime; the container's entrypoint
+# binds Nginx to it automatically, so no PORT variable is needed here.
+
+services:
+  - type: web
+    name: lorie-app
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /
+    autoDeploy: true
+    envVars:
+      # ── Core Laravel ──────────────────────────────────────────
+      - key: APP_NAME
+        value: CalorieTracker
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: "false"
+      - key: APP_KEY            # generate locally: php artisan key:generate --show
+        sync: false
+      - key: APP_URL            # e.g. https://lorie-app.onrender.com
+        sync: false
+      - key: LOG_CHANNEL
+        value: stderr
+      - key: LOG_LEVEL
+        value: error
+
+      # ── Database (Neon Postgres — paste from your Neon dashboard) ──
+      - key: DB_CONNECTION
+        value: pgsql
+      - key: DB_HOST
+        sync: false
+      - key: DB_PORT
+        value: "5432"
+      - key: DB_DATABASE
+        sync: false
+      - key: DB_USERNAME
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: DB_SSLMODE
+        value: require
+
+      # ── Sessions / cache / queue all use the database ──────────
+      - key: SESSION_DRIVER
+        value: database
+      - key: CACHE_STORE
+        value: database
+      - key: QUEUE_CONNECTION
+        value: database
+      - key: FILESYSTEM_DISK
+        value: local
+
+      # ── AI + nutrition providers ──────────────────────────────
+      - key: AI_PROVIDER
+        value: groq
+      - key: GROQ_API_KEY
+        sync: false
+      - key: GROQ_MODEL
+        value: openai/gpt-oss-120b
+      - key: GROQ_VISION_MODEL
+        value: meta-llama/llama-4-scout-17b-16e-instruct
+      - key: USDA_API_KEY
+        sync: false

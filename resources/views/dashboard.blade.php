@@ -29,17 +29,23 @@
     {{-- Date navigation --}}
     <div class="animate-rise mb-6 flex items-center justify-between gap-2">
         <a href="{{ route('dashboard', ['date' => $prev]) }}"
-           class="grid size-10 place-items-center rounded-full border border-slate-200 bg-white text-slate-500 shadow-sm transition hover:border-brand-300 hover:text-brand-600" title="Previous day">&larr;</a>
+           class="grid size-11 place-items-center rounded-2xl border border-slate-200 bg-white text-slate-500 shadow-sm transition hover:border-brand-300 hover:text-brand-600 active:scale-95" title="Previous day" aria-label="Previous day">
+            <x-icon name="chevron-left" class="size-5" />
+        </a>
         <div class="text-center">
             <p class="font-semibold text-slate-900">{{ $carbonDate->format('l, M j') }}</p>
             @unless ($isToday)
-                <a href="{{ route('dashboard') }}" class="text-xs font-medium text-brand-600 hover:underline">↩ Jump to today</a>
+                <a href="{{ route('dashboard') }}" class="mt-0.5 inline-flex items-center gap-1 text-xs font-medium text-brand-600 hover:underline">
+                    <x-icon name="rotate" class="size-3.5" /> Jump to today
+                </a>
             @else
                 <p class="text-xs font-medium text-slate-400">Today</p>
             @endunless
         </div>
         <a href="{{ route('dashboard', ['date' => $next]) }}"
-           class="grid size-10 place-items-center rounded-full border border-slate-200 bg-white text-slate-500 shadow-sm transition hover:border-brand-300 hover:text-brand-600" title="Next day">&rarr;</a>
+           class="grid size-11 place-items-center rounded-2xl border border-slate-200 bg-white text-slate-500 shadow-sm transition hover:border-brand-300 hover:text-brand-600 active:scale-95" title="Next day" aria-label="Next day">
+            <x-icon name="chevron-right" class="size-5" />
+        </a>
     </div>
 
     {{-- Hero progress card --}}
@@ -54,6 +60,7 @@
                             stroke-dasharray="{{ $circ }}" stroke-dashoffset="{{ $offset }}" />
                 </svg>
                 <div class="absolute inset-0 flex flex-col items-center justify-center">
+                    <x-icon name="flame" class="mb-1 size-5 {{ $ring }}" />
                     <span class="text-4xl font-extrabold tracking-tight text-slate-900">{{ number_format($totals['calories']) }}</span>
                     <span class="text-xs font-medium text-slate-400">of {{ number_format($goal) }} kcal</span>
                     <span class="mt-1 rounded-full px-2 py-0.5 text-[11px] font-bold {{ $over ? 'bg-rose-100 text-rose-600' : 'bg-brand-100 text-brand-700' }}">{{ $percent }}%</span>
@@ -96,12 +103,17 @@
     </section>
 
     {{-- Add food form --}}
-    <section class="animate-rise mb-6 rounded-3xl border border-slate-200/80 bg-white p-6 shadow-sm">
+    <section id="add-food" class="animate-rise mb-6 scroll-mt-20 rounded-3xl border border-slate-200/80 bg-white p-6 shadow-sm">
         <h2 class="flex items-center gap-2 text-base font-bold text-slate-900">
-            <span class="grid size-7 place-items-center rounded-lg bg-brand-100 text-brand-600">+</span>
+            <span class="grid size-7 place-items-center rounded-lg bg-brand-100 text-brand-600">
+                <x-icon name="plus" class="size-4" />
+            </span>
             Add food
         </h2>
-        <p class="mb-4 mt-1 text-sm text-slate-500">Describe it in plain language — AI breaks it down and looks up real nutrition data.</p>
+        <p class="mb-4 mt-1 flex items-center gap-1.5 text-sm text-slate-500">
+            <x-icon name="sparkles" class="size-4 shrink-0 text-brand-500" />
+            Describe it in plain language — AI breaks it down and looks up real nutrition data.
+        </p>
         <form method="POST" action="{{ route('entries.store') }}" class="flex flex-col gap-3 sm:flex-row" data-loading="Analyzing your food…">
             @csrf
             <input type="hidden" name="consumed_on" value="{{ $date }}">
@@ -109,7 +121,8 @@
                    placeholder="e.g. chicken adobo with rice"
                    class="flex-1 rounded-xl border border-slate-300 bg-slate-50/50 px-4 py-3 text-sm shadow-sm outline-none transition focus:border-brand-500 focus:bg-white focus:ring-4 focus:ring-brand-500/15">
             <button type="submit"
-                    class="rounded-xl bg-gradient-to-br from-brand-500 to-teal-500 px-6 py-3 text-sm font-semibold text-white shadow-md shadow-brand-500/25 transition hover:shadow-lg hover:shadow-brand-500/30 active:scale-95 focus:ring-4 focus:ring-brand-500/30">
+                    class="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-br from-brand-500 to-teal-500 px-6 py-3 text-sm font-semibold text-white shadow-md shadow-brand-500/25 transition hover:shadow-lg hover:shadow-brand-500/30 active:scale-95 focus:ring-4 focus:ring-brand-500/30">
+                <x-icon name="sparkles" class="size-4" />
                 Estimate &amp; add
             </button>
         </form>
@@ -128,7 +141,7 @@
             <input type="file" name="photo" id="photo-input" accept="image/*" capture="environment" class="sr-only" data-autosubmit>
             <label for="photo-input"
                    class="flex cursor-pointer items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-300 bg-slate-50/50 px-4 py-4 text-sm font-semibold text-slate-600 transition hover:border-brand-400 hover:bg-brand-50/40 hover:text-brand-700">
-                <span class="text-lg">📷</span>
+                <x-icon name="camera" class="size-5" />
                 Take or upload a food photo
             </label>
         </form>
@@ -174,7 +187,9 @@
                           onsubmit="return confirm('Remove this entry?')">
                         @csrf
                         @method('DELETE')
-                        <button type="submit" class="grid size-8 place-items-center rounded-lg text-slate-300 transition hover:bg-rose-50 hover:text-rose-600" title="Remove">&times;</button>
+                        <button type="submit" class="grid size-8 place-items-center rounded-lg text-slate-300 transition hover:bg-rose-50 hover:text-rose-600" title="Remove" aria-label="Remove entry">
+                            <x-icon name="trash" class="size-4" />
+                        </button>
                     </form>
                 </div>
 
@@ -204,8 +219,10 @@
             </div>
         @empty
             <div class="rounded-2xl border border-dashed border-slate-300 bg-white/60 px-4 py-12 text-center">
-                <p class="text-3xl">🍽️</p>
-                <p class="mt-2 text-sm font-medium text-slate-500">Nothing logged {{ $isToday ? 'yet today' : 'for this day' }}.</p>
+                <span class="mx-auto grid size-12 place-items-center rounded-2xl bg-slate-100 text-slate-400">
+                    <x-icon name="utensils" class="size-6" />
+                </span>
+                <p class="mt-3 text-sm font-medium text-slate-500">Nothing logged {{ $isToday ? 'yet today' : 'for this day' }}.</p>
                 <p class="text-xs text-slate-400">Add your first food above to get started.</p>
             </div>
         @endforelse
@@ -214,7 +231,9 @@
     {{-- Goal setting --}}
     <section class="rounded-3xl border border-slate-200/80 bg-white p-6 shadow-sm">
         <h2 class="flex items-center gap-2 text-base font-bold text-slate-900">
-            <span class="grid size-7 place-items-center rounded-lg bg-slate-100 text-slate-500">🎯</span>
+            <span class="grid size-7 place-items-center rounded-lg bg-slate-100 text-slate-500">
+                <x-icon name="target" class="size-4" />
+            </span>
             Daily calorie goal
         </h2>
         <form method="POST" action="{{ route('goal.update') }}" class="mt-4 flex items-center gap-3">
