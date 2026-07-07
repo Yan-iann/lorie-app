@@ -18,6 +18,7 @@ class UpdateGoalRequest extends FormRequest
     {
         return [
             'daily_goal' => ['required', 'integer', 'min:500', 'max:10000'],
+            'display_name' => ['nullable', 'string', 'max:30'],
         ];
     }
 }

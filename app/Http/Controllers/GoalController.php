@@ -10,8 +10,14 @@ class GoalController extends Controller
 {
     public function update(UpdateGoalRequest $request): RedirectResponse
     {
-        Setting::put('daily_goal', (string) $request->validated()['daily_goal']);
+        $validated = $request->validated();
 
-        return back()->with('success', 'Daily calorie goal updated.');
+        Setting::put('daily_goal', (string) $validated['daily_goal']);
+
+        if (filled($validated['display_name'] ?? null)) {
+            Setting::put('display_name', trim($validated['display_name']));
+        }
+
+        return back()->with('success', 'Settings updated.');
     }
 }

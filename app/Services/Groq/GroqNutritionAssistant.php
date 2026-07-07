@@ -141,6 +141,18 @@ class GroqNutritionAssistant implements NutritionAssistant
         ];
     }
 
+    public function dailyTip(): string
+    {
+        $today = today()->format('l, F j');
+
+        $prompt = "Give ONE short, practical healthy-eating tip for the day ({$today}) — about nutrition, food choices, portion sizes, hydration, or meal prep. Make it specific and actionable, under 20 words. Reply with ONLY the tip text: no numbering, no quotation marks, no preamble.";
+
+        return trim($this->request($this->model, [
+            ['role' => 'system', 'content' => 'You reply with a single short, practical tip and nothing else.'],
+            ['role' => 'user', 'content' => $prompt],
+        ]));
+    }
+
     /**
      * Run a JSON-mode chat completion against the text model and decode the result.
      *

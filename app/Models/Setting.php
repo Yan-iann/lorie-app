@@ -28,4 +28,11 @@ class Setting extends Model
 
         Cache::forget("setting:{$key}");
     }
+
+    public static function forget(string $key): void
+    {
+        static::query()->where('key', $key)->delete();
+
+        Cache::forget("setting:{$key}");
+    }
 }

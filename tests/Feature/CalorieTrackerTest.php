@@ -4,8 +4,11 @@ namespace Tests\Feature;
 
 use App\Models\FoodEntry;
 use App\Models\Setting;
+use App\Services\DailyTip;
+use App\Support\CalorieCalculator;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
@@ -22,6 +25,12 @@ class CalorieTrackerTest extends TestCase
         config()->set('services.groq.model', 'llama-3.3-70b-versatile');
         config()->set('services.groq.vision_model', 'test-vision-model');
         config()->set('services.usda.key', 'TEST_KEY');
+
+        // Existing user by default; onboarding tests clear this explicitly.
+        Setting::put('profile_completed', '1');
+
+        // Pre-seed today's tip so page renders don't call the AI.
+        Cache::put(DailyTip::key(), 'Fill half your plate with vegetables.', now()->addDay());
     }
 
     /** @return array<string, mixed> */
@@ -262,6 +271,74 @@ class CalorieTrackerTest extends TestCase
             ->assertRedirect();
 
         $this->assertSame('1800', Setting::get('daily_goal'));
+    }
+
+    public function test_a_fresh_user_is_sent_to_profile_onboarding(): void
+    {
+        Setting::forget('profile_completed');
+
+        $this->get(route('dashboard'))->assertRedirect(route('profile'));
+        $this->get(route('history'))->assertRedirect(route('profile'));
+    }
+
+    public function test_profile_setup_saves_details_and_completes_onboarding(): void
+    {
+        Setting::forget('profile_completed');
+
+        $this->put(route('profile.update'), [
+            'display_name' => 'Edrian',
+            'gender' => 'male',
+            'height_cm' => 175,
+            'weight_kg' => 70,
+            'activity_level' => 'moderate',
+            'daily_goal' => 2600,
+        ])->assertRedirect(route('dashboard'));
+
+        $this->assertSame('1', Setting::get('profile_completed'));
+        $this->assertSame('Edrian', Setting::get('display_name'));
+        $this->assertSame('male', Setting::get('gender'));
+        $this->assertSame('175', Setting::get('height_cm'));
+        $this->assertSame('2600', Setting::get('daily_goal'));
+    }
+
+    public function test_daily_tip_is_generated_by_ai_cleaned_and_cached(): void
+    {
+        Cache::forget(DailyTip::key());
+
+        Http::fake([
+            'api.groq.com/*' => Http::response($this->aiText('“Drink a glass of water before each meal.”')),
+        ]);
+
+        // Surrounding quotes are stripped.
+        $this->assertSame('Drink a glass of water before each meal.', app(DailyTip::class)->today());
+
+        // Cached for the day — a changed API response is not used on the next call.
+        Http::fake([
+            'api.groq.com/*' => Http::response($this->aiText('Something different')),
+        ]);
+        $this->assertSame('Drink a glass of water before each meal.', app(DailyTip::class)->today());
+    }
+
+    public function test_daily_tip_falls_back_when_ai_is_unavailable(): void
+    {
+        Cache::forget(DailyTip::key());
+
+        Http::fake([
+            'api.groq.com/*' => Http::response('error', 500),
+        ]);
+
+        // A non-empty curated tip is returned instead of failing.
+        $this->assertNotEmpty(app(DailyTip::class)->today());
+    }
+
+    public function test_calorie_calculator_recommends_from_body_metrics(): void
+    {
+        // male, 175 cm, 70 kg, default age 30, moderate (1.55):
+        // BMR = 700 + 1093.75 - 150 + 5 = 1648.75 ; ×1.55 = 2555.56 → 2560
+        $this->assertSame(2560, CalorieCalculator::recommendedGoal('male', 175, 70, 'moderate'));
+
+        // Gender-only fallback when height/weight are missing.
+        $this->assertSame(2000, CalorieCalculator::recommendedGoal('female'));
     }
 
     public function test_history_aggregates_days(): void

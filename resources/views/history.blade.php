@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'History — Calorie Tracker')
+@section('title', 'History · Calorie Tracker')
 
 @section('content')
     <div class="animate-rise mb-6 flex items-center gap-2.5">
@@ -19,7 +19,7 @@
             $barColor = $percent >= 100 ? 'bg-rose-500' : ($percent >= 80 ? 'bg-amber-500' : 'bg-brand-500');
         @endphp
         <a href="{{ route('dashboard', ['date' => $date->toDateString()]) }}"
-           class="animate-rise group mb-2.5 block rounded-2xl border border-slate-200/80 bg-white px-5 py-4 shadow-sm transition hover:border-brand-300 hover:shadow-md">
+           class="animate-rise group mb-2.5 block rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm transition hover:border-brand-300 hover:shadow-md">
             <div class="flex items-center justify-between gap-3">
                 <div class="min-w-0">
                     <p class="font-semibold text-slate-900">

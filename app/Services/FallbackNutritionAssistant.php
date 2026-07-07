@@ -62,6 +62,14 @@ class FallbackNutritionAssistant implements NutritionAssistant
         }
     }
 
+    public function dailyTip(): string
+    {
+        return $this->withFallback(
+            'dailyTip',
+            fn (NutritionAssistant $a) => $a->dailyTip(),
+        );
+    }
+
     /**
      * Run $call against the primary, transparently falling back to the secondary
      * when the primary is rate-limited or otherwise unavailable.

@@ -197,6 +197,42 @@ class GeminiNutritionAssistant implements NutritionAssistant
         ];
     }
 
+    public function dailyTip(): string
+    {
+        if (! $this->isConfigured()) {
+            throw new CalorieEstimationException('The Gemini API key is not configured.');
+        }
+
+        $today = today()->format('l, F j');
+        $prompt = "Give ONE short, practical healthy-eating tip for the day ({$today}) — about nutrition, food choices, portion sizes, hydration, or meal prep. Make it specific and actionable, under 20 words. Reply with ONLY the tip text: no numbering, no quotation marks, no preamble.";
+
+        $endpoint = "https://generativelanguage.googleapis.com/v1beta/models/{$this->model}:generateContent";
+
+        try {
+            $response = Http::withHeaders(['x-goog-api-key' => $this->apiKey])
+                ->timeout(20)
+                ->connectTimeout(10)
+                ->retry(2, 500, throw: false)
+                ->post($endpoint, [
+                    'contents' => [['parts' => [['text' => $prompt]]]],
+                ]);
+        } catch (ConnectionException $e) {
+            $this->throwConnectionFailure($e);
+        }
+
+        if ($response->failed()) {
+            $this->throwHttpFailure($response->status(), $response->body());
+        }
+
+        $text = data_get($response->json(), 'candidates.0.content.parts.0.text');
+
+        if (! is_string($text)) {
+            throw new CalorieEstimationException('The AI service returned an unexpected response.');
+        }
+
+        return trim($text);
+    }
+
     /**
      * @param  array<string, mixed>  $schema
      * @return array<string, mixed>

@@ -35,4 +35,11 @@ interface NutritionAssistant
      * @return array{confidence: string, reasonable: bool, note: string}
      */
     public function verify(string $description, array $breakdown, array $totals): array;
+
+    /**
+     * Generate a short, practical healthy-eating tip for the day.
+     *
+     * @throws CalorieEstimationException
+     */
+    public function dailyTip(): string;
 }

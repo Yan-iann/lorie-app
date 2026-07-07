@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Today — Calorie Tracker')
+@section('title', 'Today · Calorie Tracker')
 
 @php
     use Illuminate\Support\Carbon;
@@ -23,9 +23,57 @@
     $cCal = $totals['carbs_g'] * 4;
     $fCal = $totals['fat_g'] * 9;
     $mTotal = max(1, $pCal + $cCal + $fCal);
+
+    // Mascot artwork (drop the file at public/images/mascot.png)
+    $hasMascot = file_exists(public_path('images/mascot.png'));
+    $mascotSrc = asset('images/mascot.png');
 @endphp
 
 @section('content')
+    {{-- Greeting header --}}
+    <header class="animate-rise mb-5">
+        <div class="flex items-center justify-between gap-2">
+            @if ($streak > 0)
+                <span class="inline-flex items-center gap-1.5 rounded-full bg-orange-100 px-3 py-1.5 text-sm font-semibold text-orange-700">
+                    <x-icon name="flame" class="size-4" /> x{{ $streak }} day streak!
+                </span>
+            @else
+                <span class="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1.5 text-sm font-semibold text-slate-500">
+                    <x-icon name="flame" class="size-4" /> Start your streak
+                </span>
+            @endif
+
+            <div class="flex items-center gap-2">
+                <a href="{{ route('history') }}" class="grid size-10 place-items-center rounded-full bg-white text-slate-500 shadow-sm ring-1 ring-slate-200/70 transition hover:text-brand-600" aria-label="History">
+                    <x-icon name="clock" class="size-[18px]" />
+                </a>
+                <a href="{{ route('profile') }}" class="grid size-10 place-items-center rounded-full bg-white text-slate-500 shadow-sm ring-1 ring-slate-200/70 transition hover:text-brand-600" aria-label="Profile">
+                    <x-icon name="settings" class="size-[18px]" />
+                </a>
+            </div>
+        </div>
+
+        <p class="mt-4 text-xs font-semibold tracking-wide text-slate-400 uppercase">{{ $carbonDate->format('l, F j') }}</p>
+        <h1 class="text-3xl font-bold tracking-tight text-slate-900">{{ $greeting }}, <span class="text-brand-600">{{ $name }}</span>!</h1>
+    </header>
+
+    {{-- Mascot coach banner --}}
+    <div class="animate-rise mb-6">
+        <div class="relative flex items-end gap-2 rounded-2xl bg-brand-600 px-3 pt-3 pb-3">
+            @if ($hasMascot)
+                <img src="{{ $mascotSrc }}" alt="{{ $mascotName }} the mascot" class="-mt-9 -mb-3 h-36 w-auto shrink-0 self-end drop-shadow-lg sm:h-40">
+            @else
+                <span class="grid size-20 shrink-0 place-items-center self-center rounded-2xl bg-white/20 text-white">
+                    <x-icon name="leaf" class="size-9" />
+                </span>
+            @endif
+            <div class="flex-1 self-center rounded-2xl rounded-bl-md bg-white px-4 py-3 shadow-sm">
+                <p class="text-sm font-bold text-brand-600">{{ $mascotName }}</p>
+                <p class="mt-0.5 text-sm leading-snug text-slate-600">{{ $coachMessage }}</p>
+            </div>
+        </div>
+    </div>
+
     {{-- Date navigation --}}
     <div class="animate-rise mb-6 flex items-center justify-between gap-2">
         <a href="{{ route('dashboard', ['date' => $prev]) }}"
@@ -49,7 +97,7 @@
     </div>
 
     {{-- Hero progress card --}}
-    <section class="animate-rise mb-6 overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-lg shadow-slate-200/50">
+    <section class="animate-rise mb-6 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
         <div class="grid gap-6 p-6 sm:grid-cols-[auto_1fr] sm:items-center sm:gap-8 sm:p-8">
             {{-- Ring --}}
             <div class="relative mx-auto size-44">
@@ -103,16 +151,15 @@
     </section>
 
     {{-- Add food form --}}
-    <section id="add-food" class="animate-rise mb-6 scroll-mt-20 rounded-3xl border border-slate-200/80 bg-white p-6 shadow-sm">
+    <section id="add-food" class="animate-rise mb-6 scroll-mt-20 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
         <h2 class="flex items-center gap-2 text-base font-bold text-slate-900">
             <span class="grid size-7 place-items-center rounded-lg bg-brand-100 text-brand-600">
                 <x-icon name="plus" class="size-4" />
             </span>
             Add food
         </h2>
-        <p class="mb-4 mt-1 flex items-center gap-1.5 text-sm text-slate-500">
-            <x-icon name="sparkles" class="size-4 shrink-0 text-brand-500" />
-            Describe it in plain language — AI breaks it down and looks up real nutrition data.
+        <p class="mb-4 mt-1 text-sm text-slate-500">
+            Describe it in plain language. AI breaks it down and looks up real nutrition data.
         </p>
         <form method="POST" action="{{ route('entries.store') }}" class="flex flex-col gap-3 sm:flex-row" data-loading="Analyzing your food…">
             @csrf
@@ -121,7 +168,7 @@
                    placeholder="e.g. chicken adobo with rice"
                    class="flex-1 rounded-xl border border-slate-300 bg-slate-50/50 px-4 py-3 text-sm shadow-sm outline-none transition focus:border-brand-500 focus:bg-white focus:ring-4 focus:ring-brand-500/15">
             <button type="submit"
-                    class="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-br from-brand-500 to-teal-500 px-6 py-3 text-sm font-semibold text-white shadow-md shadow-brand-500/25 transition hover:shadow-lg hover:shadow-brand-500/30 active:scale-95 focus:ring-4 focus:ring-brand-500/30">
+                    class="inline-flex items-center justify-center gap-2 rounded-xl bg-brand-600 px-6 py-3 text-sm font-semibold text-white transition hover:bg-brand-700 active:scale-95 focus:ring-4 focus:ring-brand-600/20">
                 <x-icon name="sparkles" class="size-4" />
                 Estimate &amp; add
             </button>
@@ -151,7 +198,7 @@
     {{-- Entries list --}}
     <section class="mb-6">
         <h2 class="mb-3 flex items-center justify-between px-1 text-sm font-bold tracking-wide text-slate-500 uppercase">
-            <span>Today's entries</span>
+            <span>{{ $isToday ? "Today's entries" : 'Entries' }}</span>
             <span class="rounded-full bg-slate-200/70 px-2 py-0.5 text-xs font-semibold text-slate-600">{{ $entries->count() }}</span>
         </h2>
         @forelse ($entries as $entry)
@@ -167,11 +214,11 @@
                     default => 'text-amber-600',
                 };
             @endphp
-            <div class="animate-rise group mb-2.5 rounded-2xl border border-slate-200/80 bg-white px-4 py-3.5 shadow-sm transition hover:border-slate-300 hover:shadow-md">
+            <div class="animate-rise group mb-2.5 rounded-2xl border border-slate-200 bg-white px-4 py-3.5 shadow-sm transition hover:border-slate-300 hover:shadow-md">
                 <div class="flex items-center gap-3">
                     <div class="min-w-0 flex-1">
                         <div class="flex flex-wrap items-center gap-2">
-                            <p class="truncate font-semibold text-slate-900">{{ $entry->name }}</p>
+                            <p class="font-semibold text-slate-900">{{ $entry->name }}</p>
                             <span class="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold {{ $sourceBadge[1] }}">{{ $sourceBadge[0] }}</span>
                         </div>
                         <p class="mt-0.5 text-xs text-slate-500">
@@ -226,28 +273,5 @@
                 <p class="text-xs text-slate-400">Add your first food above to get started.</p>
             </div>
         @endforelse
-    </section>
-
-    {{-- Goal setting --}}
-    <section class="rounded-3xl border border-slate-200/80 bg-white p-6 shadow-sm">
-        <h2 class="flex items-center gap-2 text-base font-bold text-slate-900">
-            <span class="grid size-7 place-items-center rounded-lg bg-slate-100 text-slate-500">
-                <x-icon name="target" class="size-4" />
-            </span>
-            Daily calorie goal
-        </h2>
-        <form method="POST" action="{{ route('goal.update') }}" class="mt-4 flex items-center gap-3">
-            @csrf
-            @method('PUT')
-            <div class="relative">
-                <input type="number" name="daily_goal" value="{{ old('daily_goal', $goal) }}" min="500" max="10000" step="50" required
-                       class="w-36 rounded-xl border border-slate-300 bg-slate-50/50 py-2.5 pl-4 pr-14 text-sm font-semibold shadow-sm outline-none transition focus:border-brand-500 focus:bg-white focus:ring-4 focus:ring-brand-500/15">
-                <span class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400">kcal</span>
-            </div>
-            <button type="submit"
-                    class="ml-auto rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-brand-300 hover:text-brand-600 active:scale-95">
-                Save
-            </button>
-        </form>
     </section>
 @endsection
