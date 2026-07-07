@@ -36,8 +36,13 @@ return [
     ],
 
     'ai' => [
-        // Which AI provider decomposes & verifies foods: 'groq' or 'gemini'.
-        'provider' => env('AI_PROVIDER', 'groq'),
+        // Primary AI provider that decomposes & verifies foods: 'gemini' or 'groq'.
+        'provider' => env('AI_PROVIDER', 'gemini'),
+        // Secondary provider used automatically when the primary is rate-limited.
+        // Set empty to disable fail-over.
+        'fallback' => env('AI_FALLBACK_PROVIDER', 'groq'),
+        // Minutes to keep routing to the fallback after the primary hits its quota.
+        'fallback_cooldown' => (int) env('AI_FALLBACK_COOLDOWN_MINUTES', 30),
     ],
 
     'groq' => [
@@ -49,8 +54,9 @@ return [
 
     'gemini' => [
         'key' => env('GEMINI_API_KEY'),
-        'model' => env('GEMINI_MODEL', 'gemini-2.0-flash'),
-        'vision_model' => env('GEMINI_VISION_MODEL', env('GEMINI_MODEL', 'gemini-2.0-flash')),
+        'model' => env('GEMINI_MODEL', 'gemini-3.5-flash'),
+        // Gemini Flash is multimodal, so the same model handles photo capture.
+        'vision_model' => env('GEMINI_VISION_MODEL', env('GEMINI_MODEL', 'gemini-3.5-flash')),
     ],
 
     'usda' => [

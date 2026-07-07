@@ -4,6 +4,7 @@ namespace App\Services\Gemini;
 
 use App\Services\CalorieEstimationException;
 use App\Services\Contracts\NutritionAssistant;
+use App\Services\ProviderUnavailableException;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -51,15 +52,11 @@ class GeminiNutritionAssistant implements NutritionAssistant
                     ]],
                 ]);
         } catch (ConnectionException $e) {
-            Log::warning('Gemini vision request failed to connect', ['message' => $e->getMessage()]);
-
-            throw new CalorieEstimationException('Could not reach the AI service. Check your internet connection and try again.');
+            $this->throwConnectionFailure($e);
         }
 
         if ($response->failed()) {
-            Log::warning('Gemini vision returned an error response', ['status' => $response->status(), 'body' => $response->body()]);
-
-            throw new CalorieEstimationException('The AI service returned an error. Please try again in a moment.');
+            $this->throwHttpFailure($response->status(), $response->body());
         }
 
         $text = data_get($response->json(), 'candidates.0.content.parts.0.text');
@@ -227,18 +224,11 @@ class GeminiNutritionAssistant implements NutritionAssistant
                     ],
                 ]);
         } catch (ConnectionException $e) {
-            Log::warning('Gemini request failed to connect', ['message' => $e->getMessage()]);
-
-            throw new CalorieEstimationException('Could not reach the AI service. Check your internet connection and try again.');
+            $this->throwConnectionFailure($e);
         }
 
         if ($response->failed()) {
-            Log::warning('Gemini returned an error response', [
-                'status' => $response->status(),
-                'body' => $response->body(),
-            ]);
-
-            throw new CalorieEstimationException('The AI service returned an error. Please try again in a moment.');
+            $this->throwHttpFailure($response->status(), $response->body());
         }
 
         $text = data_get($response->json(), 'candidates.0.content.parts.0.text');
@@ -252,5 +242,36 @@ class GeminiNutritionAssistant implements NutritionAssistant
         } catch (Throwable) {
             throw new CalorieEstimationException('Could not understand the AI response. Please try again.');
         }
+    }
+
+    /**
+     * Turn a failed HTTP response into the right exception. 429 (quota/rate
+     * limit) and 5xx (transient) become ProviderUnavailableException so the
+     * fallback layer can switch providers; anything else is a hard error.
+     *
+     * @throws ProviderUnavailableException|CalorieEstimationException
+     */
+    private function throwHttpFailure(int $status, string $body): never
+    {
+        Log::warning('Gemini returned an error response', ['status' => $status, 'body' => $body]);
+
+        if ($status === 429 || $status >= 500) {
+            throw new ProviderUnavailableException(
+                "Gemini request failed with HTTP {$status}.",
+                quotaExhausted: $status === 429,
+            );
+        }
+
+        throw new CalorieEstimationException('The AI service returned an error. Please try again in a moment.');
+    }
+
+    /**
+     * @throws ProviderUnavailableException
+     */
+    private function throwConnectionFailure(ConnectionException $e): never
+    {
+        Log::warning('Gemini request failed to connect', ['message' => $e->getMessage()]);
+
+        throw new ProviderUnavailableException('Could not reach Gemini.', previous: $e);
     }
 }

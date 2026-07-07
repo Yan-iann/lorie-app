@@ -189,6 +189,51 @@ class CalorieTrackerTest extends TestCase
         $this->assertDatabaseCount('food_entries', 0);
     }
 
+    public function test_it_fails_over_to_groq_when_gemini_is_rate_limited(): void
+    {
+        // Gemini is primary; Groq is the automatic fallback.
+        config()->set('services.ai.provider', 'gemini');
+        config()->set('services.ai.fallback', 'groq');
+        config()->set('services.gemini.key', 'gemini-test-key');
+        config()->set('services.gemini.model', 'gemini-3.5-flash');
+        config()->set('services.gemini.vision_model', 'gemini-3.5-flash');
+
+        Http::fake([
+            // Gemini is over quota → 429 on every attempt.
+            'generativelanguage.googleapis.com/*' => Http::response(['error' => 'RESOURCE_EXHAUSTED'], 429),
+            // Groq (fallback) handles decomposition + verification.
+            'api.groq.com/*' => Http::sequence()
+                ->push($this->ai([
+                    'dish_name' => 'Apple',
+                    'ingredients' => [
+                        ['name' => 'Apple', 'usda_query' => 'apple raw', 'grams' => 100, 'est_calories' => 52, 'est_protein_g' => 0.3, 'est_carbs_g' => 14, 'est_fat_g' => 0.2],
+                    ],
+                ]))
+                ->push($this->ai(['confidence' => 'high', 'reasonable' => true, 'note' => 'Looks right.'])),
+            'api.nal.usda.gov/*' => Http::response($this->usda([208 => 52, 203 => 0.3, 204 => 0.2, 205 => 14, 291 => 2.4, 269 => 10, 307 => 1], 'Apple, raw')),
+        ]);
+
+        $response = $this->post(route('entries.store'), [
+            'description' => 'an apple',
+            'consumed_on' => today()->toDateString(),
+        ]);
+
+        $response->assertRedirect();
+        $response->assertSessionMissing('error');
+
+        // Stored via the Groq fallback even though Gemini is the primary.
+        $this->assertDatabaseHas('food_entries', [
+            'name' => 'Apple',
+            'calories' => 52,
+            'source' => 'usda',
+            'confidence' => 'high',
+        ]);
+
+        // Gemini was attempted first, then Groq served the request.
+        Http::assertSent(fn ($request) => str_contains($request->url(), 'generativelanguage.googleapis.com'));
+        Http::assertSent(fn ($request) => str_contains($request->url(), 'api.groq.com'));
+    }
+
     public function test_food_description_is_required(): void
     {
         $this->post(route('entries.store'), ['description' => ''])

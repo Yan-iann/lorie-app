@@ -120,8 +120,10 @@ there.
 - **Photo uploads** are processed in memory (sent to the AI, never written to
   disk), so the ephemeral container filesystem is not a problem.
 - **Redeploys:** just `git push` — `autoDeploy` rebuilds and re-runs migrations.
-- **Switching to Gemini:** set `AI_PROVIDER=gemini`, add `GEMINI_API_KEY`, and
-  (optionally) `GEMINI_MODEL=gemini-2.0-flash` in Render's Environment tab.
+- **AI providers:** Gemini (`gemini-3.5-flash`) is the primary; the app
+  automatically falls back to Groq when Gemini is rate-limited, then returns to
+  Gemini once its quota resets. Add both `GEMINI_API_KEY` and `GROQ_API_KEY` in
+  Render's Environment tab so the fallback has somewhere to go.
 - **No background worker needed:** AI analysis runs synchronously during the
   request. If you later queue work, add a second Render service (a *Background
   Worker*) running `php artisan queue:work`.

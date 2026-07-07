@@ -58,9 +58,19 @@ services:
       - key: FILESYSTEM_DISK
         value: local
 
-      # ── AI + nutrition providers ──────────────────────────────
+      # ── AI providers: Gemini primary, Groq automatic fallback ──
       - key: AI_PROVIDER
+        value: gemini
+      - key: AI_FALLBACK_PROVIDER
         value: groq
+      - key: AI_FALLBACK_COOLDOWN_MINUTES
+        value: "30"
+      # Gemini (primary) — multimodal, handles both text and photos
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        value: gemini-3.5-flash
+      # Groq (fallback when Gemini is rate-limited)
       - key: GROQ_API_KEY
         sync: false
       - key: GROQ_MODEL
