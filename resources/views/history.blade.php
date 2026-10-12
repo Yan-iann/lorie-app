@@ -16,7 +16,7 @@
             $total = (int) $day->total_calories;
             $over = $total > $goal;
             $percent = $goal > 0 ? min(100, (int) round($total / $goal * 100)) : 0;
-            $barColor = $percent >= 100 ? 'bg-rose-500' : ($percent >= 80 ? 'bg-amber-500' : 'bg-brand-500');
+            $barColor = $over ? 'bg-rose-500' : ($percent >= 80 ? 'bg-amber-500' : 'bg-brand-500');
         @endphp
         <a href="{{ route('dashboard', ['date' => $date->toDateString()]) }}"
            class="animate-rise group mb-2.5 block rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm transition hover:border-brand-300 hover:shadow-md">

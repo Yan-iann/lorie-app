@@ -127,12 +127,7 @@ class GroqNutritionAssistant implements NutritionAssistant
         }
         PROMPT;
 
-        try {
-            $data = $this->chat($prompt);
-        } catch (CalorieEstimationException) {
-            // Verification is advisory — never block logging if it fails.
-            return ['confidence' => 'medium', 'reasonable' => true, 'note' => 'Verification unavailable.'];
-        }
+        $data = $this->chat($prompt);
 
         return [
             'confidence' => (string) data_get($data, 'confidence', 'medium'),

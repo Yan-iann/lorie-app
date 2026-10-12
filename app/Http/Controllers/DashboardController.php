@@ -2,8 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\FoodEntry;
-use App\Models\Setting;
+use App\Models\User;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -13,15 +12,21 @@ class DashboardController extends Controller
 {
     public function index(Request $request): View|RedirectResponse
     {
-        if (Setting::get('profile_completed') !== '1') {
+        $user = $request->user();
+
+        if (! $user->hasCompletedProfile()) {
             return redirect()->route('profile');
         }
 
-        $date = $request->date('date')?->toDateString() ?? today()->toDateString();
+        // Fall back to today for a missing or malformed ?date= instead of erroring.
+        $requested = $request->query('date');
+        $date = is_string($requested) && Carbon::canBeCreatedFromFormat($requested, 'Y-m-d')
+            ? $requested
+            : today()->toDateString();
 
-        $entries = FoodEntry::forDate($date)->latest()->get();
+        $entries = $user->foodEntries()->forDate($date)->latest()->get();
 
-        $goal = (int) Setting::get('daily_goal', '2000');
+        $goal = $user->daily_goal;
 
         $totals = [
             'calories' => (int) $entries->sum('calories'),
@@ -33,9 +38,9 @@ class DashboardController extends Controller
         $remaining = $goal - $totals['calories'];
         $percent = $goal > 0 ? min(100, (int) round($totals['calories'] / $goal * 100)) : 0;
 
-        $name = Setting::get('display_name', 'Edrian');
+        $name = $user->name;
         $greeting = $this->greeting();
-        $streak = $this->loggingStreak();
+        $streak = $this->loggingStreak($user);
         $coachMessage = $this->coachMessage($entries->count(), $remaining, $percent, $name);
 
         return view('dashboard', [
@@ -66,9 +71,9 @@ class DashboardController extends Controller
      * Count consecutive days (ending today, or yesterday if today isn't logged
      * yet) that have at least one food entry.
      */
-    private function loggingStreak(): int
+    private function loggingStreak(User $user): int
     {
-        $logged = FoodEntry::query()
+        $logged = $user->foodEntries()
             ->select('consumed_on')
             ->distinct()
             ->pluck('consumed_on')

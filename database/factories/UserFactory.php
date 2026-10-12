@@ -34,6 +34,17 @@ class UserFactory extends Factory
     }
 
     /**
+     * Indicate that the user has finished profile onboarding.
+     */
+    public function onboarded(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'gender' => 'male',
+            'profile_completed_at' => now(),
+        ]);
+    }
+
+    /**
      * Indicate that the model's email address should be unverified.
      */
     public function unverified(): static

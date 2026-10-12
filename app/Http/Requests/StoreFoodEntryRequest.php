@@ -18,7 +18,7 @@ class StoreFoodEntryRequest extends FormRequest
     {
         return [
             'description' => ['required', 'string', 'min:2', 'max:255'],
-            'consumed_on' => ['nullable', 'date'],
+            'consumed_on' => ['nullable', 'date_format:Y-m-d'],
         ];
     }
 }

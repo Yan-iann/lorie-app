@@ -2,22 +2,21 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\FoodEntry;
-use App\Models\Setting;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 
 class HistoryController extends Controller
 {
-    public function index(): View|RedirectResponse
+    public function index(Request $request): View|RedirectResponse
     {
-        if (Setting::get('profile_completed') !== '1') {
+        $user = $request->user();
+
+        if (! $user->hasCompletedProfile()) {
             return redirect()->route('profile');
         }
 
-        $goal = (int) Setting::get('daily_goal', '2000');
-
-        $days = FoodEntry::query()
+        $days = $user->foodEntries()
             ->selectRaw('consumed_on, COUNT(*) as entries_count, SUM(calories) as total_calories, SUM(protein_g) as total_protein, SUM(carbs_g) as total_carbs, SUM(fat_g) as total_fat')
             ->groupBy('consumed_on')
             ->orderByDesc('consumed_on')
@@ -25,7 +24,7 @@ class HistoryController extends Controller
 
         return view('history', [
             'days' => $days,
-            'goal' => $goal,
+            'goal' => $user->daily_goal,
         ]);
     }
 }

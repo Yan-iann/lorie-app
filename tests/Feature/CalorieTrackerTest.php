@@ -3,8 +3,9 @@
 namespace Tests\Feature;
 
 use App\Models\FoodEntry;
-use App\Models\Setting;
+use App\Models\User;
 use App\Services\DailyTip;
+use App\Services\Usda\UsdaFoodClient;
 use App\Support\CalorieCalculator;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -16,9 +17,14 @@ class CalorieTrackerTest extends TestCase
 {
     use RefreshDatabase;
 
+    private User $user;
+
     protected function setUp(): void
     {
         parent::setUp();
+
+        // Page renders shouldn't depend on a built Vite manifest.
+        $this->withoutVite();
 
         config()->set('services.ai.provider', 'groq');
         config()->set('services.groq.key', 'test-key');
@@ -26,8 +32,9 @@ class CalorieTrackerTest extends TestCase
         config()->set('services.groq.vision_model', 'test-vision-model');
         config()->set('services.usda.key', 'TEST_KEY');
 
-        // Existing user by default; onboarding tests clear this explicitly.
-        Setting::put('profile_completed', '1');
+        // Signed in as an onboarded user by default; onboarding tests use a fresh one.
+        $this->user = User::factory()->onboarded()->create();
+        $this->actingAs($this->user);
 
         // Pre-seed today's tip so page renders don't call the AI.
         Cache::put(DailyTip::key(), 'Fill half your plate with vegetables.', now()->addDay());
@@ -243,6 +250,83 @@ class CalorieTrackerTest extends TestCase
         Http::assertSent(fn ($request) => str_contains($request->url(), 'api.groq.com'));
     }
 
+    public function test_verification_fails_over_when_the_primary_errors_mid_request(): void
+    {
+        config()->set('services.ai.provider', 'gemini');
+        config()->set('services.ai.fallback', 'groq');
+        config()->set('services.gemini.key', 'gemini-test-key');
+        config()->set('services.gemini.model', 'gemini-3.5-flash');
+        config()->set('services.gemini.vision_model', 'gemini-3.5-flash');
+
+        $decomposition = json_encode([
+            'dish_name' => 'Apple',
+            'ingredients' => [
+                ['name' => 'Apple', 'usda_query' => 'apple raw', 'grams' => 100, 'est_calories' => 52, 'est_protein_g' => 0.3, 'est_carbs_g' => 14, 'est_fat_g' => 0.2],
+            ],
+        ]);
+
+        Http::fake([
+            // Gemini decomposes fine, then goes down (5xx, so no quota breaker) for verification.
+            'generativelanguage.googleapis.com/*' => Http::sequence()
+                ->push(['candidates' => [['content' => ['parts' => [['text' => $decomposition]]]]]])
+                ->whenEmpty(Http::response('unavailable', 503)),
+            // Groq (fallback) should pick up the verification.
+            'api.groq.com/*' => Http::response($this->ai(['confidence' => 'high', 'reasonable' => true, 'note' => 'Looks right.'])),
+            'api.nal.usda.gov/*' => Http::response($this->usda([208 => 52, 203 => 0.3, 204 => 0.2, 205 => 14], 'Apple, raw')),
+        ]);
+
+        $this->post(route('entries.store'), ['description' => 'an apple'])->assertRedirect();
+
+        $this->assertDatabaseHas('food_entries', [
+            'name' => 'Apple',
+            'confidence' => 'high',
+            'verification_note' => 'Looks right.',
+        ]);
+    }
+
+    public function test_an_entry_is_still_logged_when_verification_fails(): void
+    {
+        Http::fake([
+            'api.groq.com/*' => Http::sequence()
+                ->push($this->ai([
+                    'dish_name' => 'Apple',
+                    'ingredients' => [
+                        ['name' => 'Apple', 'usda_query' => 'apple raw', 'grams' => 100, 'est_calories' => 52, 'est_protein_g' => 0.3, 'est_carbs_g' => 14, 'est_fat_g' => 0.2],
+                    ],
+                ]))
+                ->whenEmpty(Http::response('unavailable', 503)),
+            'api.nal.usda.gov/*' => Http::response($this->usda([208 => 52], 'Apple, raw')),
+        ]);
+
+        $this->post(route('entries.store'), ['description' => 'an apple'])
+            ->assertRedirect()
+            ->assertSessionMissing('error');
+
+        $this->assertDatabaseHas('food_entries', ['name' => 'Apple', 'calories' => 52]);
+    }
+
+    public function test_usda_key_is_sent_as_a_header_and_foundation_sugars_are_read(): void
+    {
+        Http::fake([
+            // Foundation foods report total sugars as nutrient 269.3 rather than 269.
+            'api.nal.usda.gov/*' => Http::response($this->usda([208 => 85, '269.3' => 15.8], 'Bananas, overripe, raw')),
+        ]);
+
+        $match = app(UsdaFoodClient::class)->searchBestMatch('banana raw');
+
+        $this->assertSame(15.8, $match['per_100g']['sugar_g']);
+
+        Http::assertSent(fn ($request) => $request->hasHeader('X-Api-Key', 'TEST_KEY')
+            && ! str_contains($request->url(), 'TEST_KEY'));
+    }
+
+    public function test_dashboard_ignores_an_invalid_date(): void
+    {
+        $this->get('/?date=not-a-date')->assertOk();
+        $this->get('/?date[]=2026-01-01')->assertOk();
+        $this->get('/?date=2026-02-31')->assertOk();
+    }
+
     public function test_food_description_is_required(): void
     {
         $this->post(route('entries.store'), ['description' => ''])
@@ -251,7 +335,7 @@ class CalorieTrackerTest extends TestCase
 
     public function test_an_entry_can_be_deleted(): void
     {
-        $entry = FoodEntry::create([
+        $entry = $this->user->foodEntries()->create([
             'name' => 'Banana',
             'calories' => 105,
             'protein_g' => 1.3,
@@ -270,12 +354,12 @@ class CalorieTrackerTest extends TestCase
         $this->put(route('goal.update'), ['daily_goal' => 1800])
             ->assertRedirect();
 
-        $this->assertSame('1800', Setting::get('daily_goal'));
+        $this->assertSame(1800, $this->user->refresh()->daily_goal);
     }
 
     public function test_a_fresh_user_is_sent_to_profile_onboarding(): void
     {
-        Setting::forget('profile_completed');
+        $this->actingAs(User::factory()->create());
 
         $this->get(route('dashboard'))->assertRedirect(route('profile'));
         $this->get(route('history'))->assertRedirect(route('profile'));
@@ -283,9 +367,9 @@ class CalorieTrackerTest extends TestCase
 
     public function test_profile_setup_saves_details_and_completes_onboarding(): void
     {
-        Setting::forget('profile_completed');
+        $user = User::factory()->create();
 
-        $this->put(route('profile.update'), [
+        $this->actingAs($user)->put(route('profile.update'), [
             'display_name' => 'Edrian',
             'gender' => 'male',
             'height_cm' => 175,
@@ -294,11 +378,12 @@ class CalorieTrackerTest extends TestCase
             'daily_goal' => 2600,
         ])->assertRedirect(route('dashboard'));
 
-        $this->assertSame('1', Setting::get('profile_completed'));
-        $this->assertSame('Edrian', Setting::get('display_name'));
-        $this->assertSame('male', Setting::get('gender'));
-        $this->assertSame('175', Setting::get('height_cm'));
-        $this->assertSame('2600', Setting::get('daily_goal'));
+        $user->refresh();
+        $this->assertTrue($user->hasCompletedProfile());
+        $this->assertSame('Edrian', $user->name);
+        $this->assertSame('male', $user->gender);
+        $this->assertSame(175.0, $user->height_cm);
+        $this->assertSame(2600, $user->daily_goal);
     }
 
     public function test_daily_tip_is_generated_by_ai_cleaned_and_cached(): void
@@ -343,8 +428,8 @@ class CalorieTrackerTest extends TestCase
 
     public function test_history_aggregates_days(): void
     {
-        FoodEntry::create(['name' => 'A', 'calories' => 300, 'consumed_on' => today()]);
-        FoodEntry::create(['name' => 'B', 'calories' => 400, 'consumed_on' => today()]);
+        $this->user->foodEntries()->create(['name' => 'A', 'calories' => 300, 'consumed_on' => today()]);
+        $this->user->foodEntries()->create(['name' => 'B', 'calories' => 400, 'consumed_on' => today()]);
 
         $this->get(route('history'))
             ->assertOk()

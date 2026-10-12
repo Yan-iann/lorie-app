@@ -28,11 +28,15 @@ interface NutritionAssistant
     public function decompose(string $description): array;
 
     /**
-     * Verify USDA-derived totals against the dish for plausibility.
+     * Verify USDA-derived totals against the dish for plausibility. Failures
+     * are thrown (so the fallback layer can switch providers); the caller
+     * treats verification as advisory.
      *
      * @param  array<int, array<string, mixed>>  $breakdown
      * @param  array<string, float|int>  $totals
      * @return array{confidence: string, reasonable: bool, note: string}
+     *
+     * @throws CalorieEstimationException
      */
     public function verify(string $description, array $breakdown, array $totals): array;
 

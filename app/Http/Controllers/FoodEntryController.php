@@ -5,10 +5,12 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreFoodEntryRequest;
 use App\Http\Requests\StoreFoodPhotoRequest;
 use App\Models\FoodEntry;
+use App\Models\User;
 use App\Services\CalorieEstimationException;
 use App\Services\NutritionAnalyzer;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Gate;
 
 class FoodEntryController extends Controller
 {
@@ -25,7 +27,7 @@ class FoodEntryController extends Controller
                 ->with('error', $e->getMessage());
         }
 
-        return $this->saveAndRedirect($analysis, $date);
+        return $this->saveAndRedirect($request->user(), $analysis, $date);
     }
 
     public function storePhoto(StoreFoodPhotoRequest $request, NutritionAnalyzer $analyzer): RedirectResponse
@@ -40,11 +42,13 @@ class FoodEntryController extends Controller
             return back()->with('error', $e->getMessage());
         }
 
-        return $this->saveAndRedirect($analysis, $date, '📷 ');
+        return $this->saveAndRedirect($request->user(), $analysis, $date, '📷 ');
     }
 
     public function destroy(FoodEntry $foodEntry): RedirectResponse
     {
+        Gate::authorize('delete', $foodEntry);
+
         $date = $foodEntry->consumed_on->toDateString();
         $foodEntry->delete();
 
@@ -56,9 +60,9 @@ class FoodEntryController extends Controller
     /**
      * @param  array<string, mixed>  $analysis
      */
-    private function saveAndRedirect(array $analysis, string $date, string $prefix = ''): RedirectResponse
+    private function saveAndRedirect(User $user, array $analysis, string $date, string $prefix = ''): RedirectResponse
     {
-        $entry = FoodEntry::create([
+        $entry = $user->foodEntries()->create([
             ...$analysis,
             'consumed_on' => $date,
         ]);
@@ -89,8 +93,6 @@ class FoodEntryController extends Controller
             throw new CalorieEstimationException('That image could not be read. Try a different photo.');
         }
 
-        $image = $this->applyExifOrientation($image, $file);
-
         $width = imagesx($image);
         $height = imagesy($image);
         $max = 1024;
@@ -104,6 +106,9 @@ class FoodEntryController extends Controller
                 $image = $resized;
             }
         }
+
+        // Rotate after downscaling so a second full-size copy is never held in memory.
+        $image = $this->applyExifOrientation($image, $file);
 
         ob_start();
         imagejpeg($image, null, 85);

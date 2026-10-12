@@ -51,15 +51,10 @@ class FallbackNutritionAssistant implements NutritionAssistant
 
     public function verify(string $description, array $breakdown, array $totals): array
     {
-        try {
-            return $this->withFallback(
-                'verify',
-                fn (NutritionAssistant $a) => $a->verify($description, $breakdown, $totals),
-            );
-        } catch (CalorieEstimationException) {
-            // Verification is advisory — never block logging if both providers fail.
-            return ['confidence' => 'medium', 'reasonable' => true, 'note' => 'Verification unavailable.'];
-        }
+        return $this->withFallback(
+            'verify',
+            fn (NutritionAssistant $a) => $a->verify($description, $breakdown, $totals),
+        );
     }
 
     public function dailyTip(): string

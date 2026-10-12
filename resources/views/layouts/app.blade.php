@@ -51,15 +51,18 @@
             @yield('content')
         </main>
 
-        @inject('dailyTip', 'App\Services\DailyTip')
         <footer class="mx-auto w-full max-w-3xl px-4 py-10 text-center sm:px-6">
-            <p class="text-xs font-semibold tracking-wide text-brand-600 uppercase">Lorie's tip of the day</p>
-            <p class="mx-auto mt-1.5 max-w-md text-sm leading-relaxed text-slate-500">{{ $dailyTip->today() }}</p>
-            <p class="mt-6 text-[11px] tracking-wide text-slate-300">Lorie · made by Edrian</p>
+            @auth
+                @inject('dailyTip', 'App\Services\DailyTip')
+                <p class="text-xs font-semibold tracking-wide text-brand-600 uppercase">Lorie's tip of the day</p>
+                <p class="mx-auto mt-1.5 mb-6 max-w-md text-sm leading-relaxed text-slate-500">{{ $dailyTip->today() }}</p>
+            @endauth
+            <p class="text-[11px] tracking-wide text-slate-300">Lorie · made by Edrian</p>
         </footer>
     </div>
 
-    {{-- Mobile bottom tab bar --}}
+    {{-- Mobile bottom tab bar (signed-in users only) --}}
+    @auth
     <nav class="fixed inset-x-0 bottom-0 z-30 border-t border-slate-200 bg-white sm:hidden">
         <div class="pb-safe mx-auto grid max-w-md grid-cols-3 items-end px-3 pt-2">
             <a href="{{ route('dashboard') }}" data-home
@@ -82,6 +85,7 @@
             </a>
         </div>
     </nav>
+    @endauth
 
     {{-- Loading overlay (shown during AI analysis) --}}
     <div id="loading-overlay" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/40 p-6 backdrop-blur-sm">

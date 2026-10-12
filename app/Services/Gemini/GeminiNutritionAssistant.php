@@ -148,6 +148,8 @@ class GeminiNutritionAssistant implements NutritionAssistant
      * @param  array<int, array<string, mixed>>  $breakdown
      * @param  array<string, float|int>  $totals
      * @return array{confidence: string, reasonable: bool, note: string}
+     *
+     * @throws CalorieEstimationException
      */
     public function verify(string $description, array $breakdown, array $totals): array
     {
@@ -183,12 +185,7 @@ class GeminiNutritionAssistant implements NutritionAssistant
             'required' => ['confidence', 'reasonable', 'note'],
         ];
 
-        try {
-            $data = $this->generate($prompt, $schema);
-        } catch (CalorieEstimationException) {
-            // Verification is advisory — never block logging if it fails.
-            return ['confidence' => 'medium', 'reasonable' => true, 'note' => 'Verification unavailable.'];
-        }
+        $data = $this->generate($prompt, $schema);
 
         return [
             'confidence' => (string) data_get($data, 'confidence', 'medium'),

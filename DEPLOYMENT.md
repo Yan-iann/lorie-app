@@ -87,11 +87,33 @@ Then set these in Render (Environment tab):
 | `DB_DATABASE` | from Neon |
 | `DB_USERNAME` | from Neon |
 | `DB_PASSWORD` | from Neon |
+| `GOOGLE_CLIENT_ID` | from Google Cloud (see "Google sign-in" below) |
+| `GOOGLE_CLIENT_SECRET` | from Google Cloud |
+| `GEMINI_API_KEY` | your Gemini key (primary AI provider) |
 | `GROQ_API_KEY` | your (rotated) Groq key |
 | `USDA_API_KEY` | your (rotated) USDA key |
 
 The non-secret values (`APP_ENV`, `DB_PORT`, `DB_SSLMODE`, provider models, etc.)
 are already baked into `render.yaml`.
+
+### Google sign-in
+
+The "Continue with Google" button only appears once `GOOGLE_CLIENT_ID` is set.
+Email + password sign-up works without it.
+
+1. In the [Google Cloud console](https://console.cloud.google.com/apis/credentials),
+   create (or pick) a project and configure the **OAuth consent screen**
+   (External; only the `email` and `profile` scopes are needed).
+2. **Create credentials -> OAuth client ID -> Web application.**
+3. Under **Authorized redirect URIs** add your app URL followed by
+   `/auth/google/callback`, e.g.
+   `https://lorie-app.onrender.com/auth/google/callback`
+   (add `http://localhost:8000/auth/google/callback` too if you test locally).
+4. Copy the client ID and secret into `GOOGLE_CLIENT_ID` and
+   `GOOGLE_CLIENT_SECRET`.
+
+While the consent screen is in **Testing** mode, only the Google accounts you
+list as test users can sign in. Publish it to let anyone in.
 
 ---
 
@@ -105,8 +127,12 @@ automatically:
   sessions/cache/jobs tables),
 - starts Nginx on Render's `$PORT`.
 
-When the deploy is **live**, open your `APP_URL`. Add a food entry to confirm the
-AI provider and database both work.
+When the deploy is **live**, open your `APP_URL` and create your account. Add a
+food entry to confirm the AI provider and database both work.
+
+> **Upgrading from the version without accounts?** Sign up first, before sharing
+> the link. The first account ever created inherits the existing food log and
+> profile; every account after that starts empty.
 
 Watch the **Logs** tab if anything fails — migration or connection errors show up
 there.
@@ -119,6 +145,9 @@ there.
   request takes ~30–50s to wake it. Fine for personal use.
 - **Photo uploads** are processed in memory (sent to the AI, never written to
   disk), so the ephemeral container filesystem is not a problem.
+- **Accounts:** every person signs up (email + password, or Google) and gets
+  their own food log, goal and streak. There is no password-reset email, since
+  no mail service is configured; Google sign-in is the recovery path.
 - **Redeploys:** just `git push` — `autoDeploy` rebuilds and re-runs migrations.
 - **AI providers:** Gemini (`gemini-3.5-flash`) is the primary; the app
   automatically falls back to Groq when Gemini is rate-limited, then returns to

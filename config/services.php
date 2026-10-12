@@ -35,6 +35,14 @@ return [
         ],
     ],
 
+    'google' => [
+        // OAuth client for "Continue with Google". Leave the ID empty to hide the button.
+        'client_id' => env('GOOGLE_CLIENT_ID'),
+        'client_secret' => env('GOOGLE_CLIENT_SECRET'),
+        // A relative path is resolved against the app URL at runtime.
+        'redirect' => env('GOOGLE_REDIRECT_URI', '/auth/google/callback'),
+    ],
+
     'ai' => [
         // Primary AI provider that decomposes & verifies foods: 'gemini' or 'groq'.
         'provider' => env('AI_PROVIDER', 'gemini'),

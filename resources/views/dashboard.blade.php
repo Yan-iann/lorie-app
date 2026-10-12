@@ -11,7 +11,7 @@
     $next = $carbonDate->copy()->addDay()->toDateString();
     $over = $remaining < 0;
 
-    $ring = $percent >= 100 ? 'text-rose-500' : ($percent >= 80 ? 'text-amber-500' : 'text-brand-500');
+    $ring = $over ? 'text-rose-500' : ($percent >= 80 ? 'text-amber-500' : 'text-brand-500');
 
     // Circular progress ring geometry
     $radius = 64;

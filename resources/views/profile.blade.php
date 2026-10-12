@@ -124,4 +124,18 @@
             @endunless
         </div>
     </form>
+
+    {{-- Account --}}
+    <div class="animate-rise mt-5 flex items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white px-6 py-4 shadow-sm">
+        <div class="min-w-0">
+            <p class="text-xs font-semibold tracking-wide text-slate-400 uppercase">Signed in as</p>
+            <p class="mt-0.5 truncate text-sm font-medium text-slate-700">{{ $email }}</p>
+        </div>
+        <form method="POST" action="{{ route('logout') }}">
+            @csrf
+            <button type="submit" class="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-600 shadow-sm transition hover:text-rose-600 active:scale-95">
+                Log out
+            </button>
+        </form>
+    </div>
 @endsection

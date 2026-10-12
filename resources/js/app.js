@@ -16,6 +16,19 @@ function showLoading(message) {
     overlay.classList.add('flex');
 }
 
+function hideLoading() {
+    const overlay = document.getElementById('loading-overlay');
+    if (!overlay) return;
+    overlay.classList.add('hidden');
+    overlay.classList.remove('flex');
+}
+
+// Coming back via the browser's Back button can restore the page from the
+// back/forward cache with the overlay still showing — clear it.
+window.addEventListener('pageshow', (event) => {
+    if (event.persisted) hideLoading();
+});
+
 document.addEventListener('DOMContentLoaded', () => {
     // Reveal the overlay whenever an AI form is submitted.
     document.querySelectorAll('form[data-loading]').forEach((form) => {

@@ -18,7 +18,7 @@ class StoreFoodPhotoRequest extends FormRequest
     {
         return [
             'photo' => ['required', 'image', 'mimes:jpeg,jpg,png,webp', 'max:10240'],
-            'consumed_on' => ['nullable', 'date'],
+            'consumed_on' => ['nullable', 'date_format:Y-m-d'],
         ];
     }
 
@@ -30,6 +30,7 @@ class StoreFoodPhotoRequest extends FormRequest
         return [
             'photo.required' => 'Please choose or take a photo first.',
             'photo.image' => 'That file is not a valid image.',
+            'photo.mimes' => 'Please use a JPG, PNG or WebP photo.',
             'photo.max' => 'The photo is too large (max 10MB).',
         ];
     }

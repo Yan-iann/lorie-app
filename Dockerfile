@@ -15,17 +15,19 @@ RUN npm run build
 # ─────────────────────────────────────────────────────────────
 FROM php:8.4-fpm-alpine AS app
 
-# System packages + PHP extensions the app needs (Postgres, GD, intl, zip…)
+# System packages + PHP extensions the app needs (Postgres, GD, intl, zip…).
+# GD needs WebP support and exif must be present for food-photo uploads
+# (WebP decoding and phone-photo rotation respectively).
 RUN apk add --no-cache \
         nginx \
         gettext \
-        libpng-dev libjpeg-turbo-dev freetype-dev \
+        libpng-dev libjpeg-turbo-dev libwebp-dev freetype-dev \
         icu-dev \
         libzip-dev \
         postgresql-dev \
         oniguruma-dev \
-    && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install -j"$(nproc)" pdo pdo_pgsql pgsql gd intl zip opcache bcmath \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp \
+    && docker-php-ext-install -j"$(nproc)" pdo pdo_pgsql pgsql gd exif intl zip opcache bcmath \
     && rm -rf /var/cache/apk/*
 
 # Composer binary

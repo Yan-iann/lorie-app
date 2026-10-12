@@ -20,6 +20,7 @@ class UsdaFoodClient
         '205' => 'carbs_g',    // Carbohydrate, by difference
         '291' => 'fiber_g',    // Fiber, total dietary
         '269' => 'sugar_g',    // Sugars, total
+        '269.3' => 'sugar_g',  // Total Sugars (Foundation foods)
         '307' => 'sodium_mg',  // Sodium, Na
     ];
 
@@ -40,10 +41,12 @@ class UsdaFoodClient
     public function searchBestMatch(string $query): ?array
     {
         try {
-            $response = Http::timeout(20)
+            // Key goes in a header, not the URL, so it can't leak into error logs.
+            $response = Http::withHeaders(['X-Api-Key' => $this->apiKey])
+                ->timeout(20)
                 ->connectTimeout(10)
                 ->retry(2, 400, throw: false)
-                ->post(self::ENDPOINT.'?api_key='.$this->apiKey, [
+                ->post(self::ENDPOINT, [
                     'query' => $query,
                     'dataType' => ['Foundation', 'SR Legacy', 'Survey (FNDDS)', 'Branded'],
                     'pageSize' => 10,

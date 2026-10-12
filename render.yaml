@@ -13,7 +13,7 @@ services:
     runtime: docker
     plan: free
     dockerfilePath: ./Dockerfile
-    healthCheckPath: /
+    healthCheckPath: /up
     autoDeploy: true
     envVars:
       # ── Core Laravel ──────────────────────────────────────────
@@ -27,6 +27,8 @@ services:
         sync: false
       - key: APP_URL            # e.g. https://lorie-app.onrender.com
         sync: false
+      - key: APP_TIMEZONE       # decides when "today" rolls over and the greeting
+        value: Asia/Manila
       - key: LOG_CHANNEL
         value: stderr
       - key: LOG_LEVEL
@@ -57,6 +59,13 @@ services:
         value: database
       - key: FILESYSTEM_DISK
         value: local
+
+      # ── Google sign-in (OAuth client from Google Cloud console) ──
+      # Authorized redirect URI: <APP_URL>/auth/google/callback
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
 
       # ── AI providers: Gemini primary, Groq automatic fallback ──
       - key: AI_PROVIDER

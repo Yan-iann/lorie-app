@@ -3,8 +3,12 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Cache;
 
+/**
+ * Key/value settings from before accounts existed, when the app held a single
+ * person's profile. Profiles now live on the users table; these rows are only
+ * read once, by LegacyDataClaimer, to hand that profile to the first account.
+ */
 class Setting extends Model
 {
     protected $primaryKey = 'key';
@@ -14,25 +18,4 @@ class Setting extends Model
     protected $keyType = 'string';
 
     protected $fillable = ['key', 'value'];
-
-    public static function get(string $key, ?string $default = null): ?string
-    {
-        return Cache::rememberForever("setting:{$key}", function () use ($key, $default) {
-            return static::query()->find($key)?->value ?? $default;
-        });
-    }
-
-    public static function put(string $key, string $value): void
-    {
-        static::query()->updateOrCreate(['key' => $key], ['value' => $value]);
-
-        Cache::forget("setting:{$key}");
-    }
-
-    public static function forget(string $key): void
-    {
-        static::query()->where('key', $key)->delete();
-
-        Cache::forget("setting:{$key}");
-    }
 }

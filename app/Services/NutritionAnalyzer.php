@@ -62,7 +62,12 @@ class NutritionAnalyzer
 
         $totals = $this->sumTotals($breakdown);
 
-        $verification = $this->ai->verify($description, $breakdown, $totals);
+        try {
+            $verification = $this->ai->verify($description, $breakdown, $totals);
+        } catch (CalorieEstimationException) {
+            // Verification is advisory — never block logging if it fails.
+            $verification = ['confidence' => 'medium', 'reasonable' => true, 'note' => 'Verification unavailable.'];
+        }
 
         $source = match (true) {
             $usedUsda && $usedAi => 'hybrid',
