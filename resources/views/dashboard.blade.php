@@ -159,69 +159,9 @@
             <span>{{ $isToday ? "Today's entries" : 'Entries' }}</span>
             <span class="rounded-full bg-slate-200/70 px-2 py-0.5 text-xs font-semibold text-slate-600">{{ $entries->count() }}</span>
         </h2>
+        <div class="flex flex-col gap-3">
         @forelse ($entries as $entry)
-            @php
-                $sourceBadge = match ($entry->source) {
-                    'usda' => ['USDA data', 'bg-brand-100 text-brand-700'],
-                    'hybrid' => ['USDA + AI', 'bg-sky-100 text-sky-700'],
-                    default => ['AI estimate', 'bg-amber-100 text-amber-700'],
-                };
-                $confColor = match ($entry->confidence) {
-                    'high' => 'text-brand-600',
-                    'low' => 'text-rose-600',
-                    default => 'text-amber-600',
-                };
-            @endphp
-            <div class="animate-rise group mb-2.5 rounded-2xl border border-slate-200 bg-white px-4 py-3.5 shadow-sm transition hover:border-slate-300 hover:shadow-md">
-                <div class="flex items-center gap-3">
-                    <div class="min-w-0 flex-1">
-                        <div class="flex flex-wrap items-center gap-2">
-                            <p class="font-semibold text-slate-900">{{ $entry->name }}</p>
-                            <span class="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold {{ $sourceBadge[1] }}">{{ $sourceBadge[0] }}</span>
-                        </div>
-                        <p class="mt-0.5 text-xs text-slate-500">
-                            @if ($entry->quantity)<span class="text-slate-400">{{ $entry->quantity }}</span> · @endif
-                            P {{ $entry->protein_g }}g · C {{ $entry->carbs_g }}g · F {{ $entry->fat_g }}g
-                        </p>
-                    </div>
-                    <div class="shrink-0 text-right">
-                        <p class="font-bold text-slate-900">{{ number_format($entry->calories) }}</p>
-                        <p class="text-[10px] font-medium text-slate-400">kcal</p>
-                    </div>
-                    <form method="POST" action="{{ route('entries.destroy', $entry) }}"
-                          onsubmit="return confirm('Remove this entry?')">
-                        @csrf
-                        @method('DELETE')
-                        <button type="submit" class="grid size-8 cursor-pointer place-items-center rounded-lg text-slate-300 transition hover:bg-rose-50 hover:text-rose-600 active:scale-90" title="Remove" aria-label="Remove entry">
-                            <x-icon name="trash" class="size-[18px]" />
-                        </button>
-                    </form>
-                </div>
-
-                @if ($entry->verification_note)
-                    <p class="mt-2 flex items-start gap-1.5 rounded-lg bg-slate-50 px-2.5 py-1.5 text-xs {{ $confColor }}">
-                        <span class="font-semibold whitespace-nowrap">AI check · {{ $entry->confidence }}:</span>
-                        <span class="text-slate-600">{{ $entry->verification_note }}</span>
-                    </p>
-                @endif
-
-                @if (! empty($entry->breakdown))
-                    <details class="mt-2">
-                        <summary class="cursor-pointer text-xs font-medium text-slate-400 transition hover:text-brand-600">Ingredient breakdown</summary>
-                        <ul class="mt-2 space-y-1 border-t border-slate-100 pt-2 text-xs text-slate-500">
-                            @foreach ($entry->breakdown as $item)
-                                <li class="flex justify-between gap-2">
-                                    <span class="truncate">
-                                        {{ $item['name'] }} <span class="text-slate-400">({{ $item['grams'] }}g)</span>
-                                        <span class="text-[10px] font-medium {{ ($item['source'] ?? '') === 'usda' ? 'text-brand-500' : 'text-amber-500' }}">[{{ $item['source'] ?? 'ai' }}]</span>
-                                    </span>
-                                    <span class="shrink-0 font-semibold text-slate-600">{{ number_format($item['calories']) }} kcal</span>
-                                </li>
-                            @endforeach
-                        </ul>
-                    </details>
-                @endif
-            </div>
+            <x-entry-card :entry="$entry" />
         @empty
             <div class="rounded-2xl border border-dashed border-slate-300 bg-white/60 px-4 py-12 text-center">
                 <span class="mx-auto grid size-12 place-items-center rounded-2xl bg-slate-100 text-slate-400">
@@ -231,6 +171,7 @@
                 <p class="text-xs text-slate-400">Tap the + button to add your first food.</p>
             </div>
         @endforelse
+        </div>
     </section>
 
     <x-food-fact :fact="$foodFact" />
