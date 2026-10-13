@@ -12,6 +12,9 @@ services:
     name: lorie-app
     runtime: docker
     plan: free
+    # Must match the Neon database's region (AWS Singapore) — every page makes
+    # several database round trips. Can't be changed after the service exists.
+    region: singapore
     dockerfilePath: ./Dockerfile
     healthCheckPath: /up
     autoDeploy: true
@@ -85,6 +88,6 @@ services:
       - key: GROQ_MODEL
         value: openai/gpt-oss-120b
       - key: GROQ_VISION_MODEL
-        value: meta-llama/llama-4-scout-17b-16e-instruct
+        value: qwen/qwen3.8-27b
       - key: USDA_API_KEY
         sync: false

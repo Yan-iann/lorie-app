@@ -23,10 +23,62 @@ function hideLoading() {
     overlay.classList.remove('flex');
 }
 
+// Page-to-page navigation feedback: a progress bar straight away, then a
+// skeleton in place of the content if the next page is slow to arrive.
+const SKELETON_DELAY_MS = 250;
+let skeletonTimer = null;
+
+function startPageLoading() {
+    document.getElementById('nav-progress')?.classList.add('is-active');
+
+    clearTimeout(skeletonTimer);
+    skeletonTimer = setTimeout(() => {
+        const content = document.getElementById('page-content');
+        const skeleton = document.getElementById('page-skeleton');
+        if (!content || !skeleton) return;
+        content.classList.add('hidden');
+        skeleton.classList.remove('hidden');
+        window.scrollTo(0, 0);
+    }, SKELETON_DELAY_MS);
+}
+
+function stopPageLoading() {
+    clearTimeout(skeletonTimer);
+    document.getElementById('nav-progress')?.classList.remove('is-active');
+    document.getElementById('page-skeleton')?.classList.add('hidden');
+    document.getElementById('page-content')?.classList.remove('hidden');
+}
+
+// Links to another page of the app. Listening on the document means a link's
+// own handler has already run, so anything it cancelled is skipped here.
+document.addEventListener('click', (event) => {
+    if (event.defaultPrevented || event.button !== 0) return;
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+
+    const link = event.target.closest?.('a[href]');
+    if (!link || link.target === '_blank' || link.hasAttribute('download')) return;
+
+    const url = new URL(link.href, window.location.href);
+    if (url.origin !== window.location.origin) return;
+    // Same page, just a #hash — nothing loads.
+    if (url.hash && url.pathname === window.location.pathname && url.search === window.location.search) return;
+
+    startPageLoading();
+});
+
+// Form posts (save profile, sign in, remove entry…). AI forms have their own overlay.
+document.addEventListener('submit', (event) => {
+    if (event.defaultPrevented || event.target.matches('form[data-loading]')) return;
+
+    startPageLoading();
+});
+
 // Coming back via the browser's Back button can restore the page from the
-// back/forward cache with the overlay still showing — clear it.
+// back/forward cache with a loading state still showing — clear it.
 window.addEventListener('pageshow', (event) => {
-    if (event.persisted) hideLoading();
+    if (!event.persisted) return;
+    hideLoading();
+    stopPageLoading();
 });
 
 document.addEventListener('DOMContentLoaded', () => {

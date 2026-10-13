@@ -35,7 +35,10 @@ Never commit real keys — always set them as environment variables on the host.
 
 ## Step 1 — Create the database (Neon)
 
-1. Sign up at <https://neon.tech> and create a project (pick a region near you).
+1. Sign up at <https://neon.tech> and create a project. **Pick the same region as the Render service** (Render
+   defaults to Oregon / US West unless you choose another when creating it).
+   Every page talks to the database several times, so a database on another
+   continent adds seconds to each page load.
 2. In the project's **Connection Details**, note these values — you'll paste them
    into Render in Step 4:
    - **Host** → `DB_HOST` (e.g. `ep-cool-name-123456.us-east-2.aws.neon.tech`)

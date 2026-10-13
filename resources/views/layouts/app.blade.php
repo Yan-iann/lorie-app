@@ -15,40 +15,48 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="h-full text-slate-800 antialiased">
+    {{-- Progress bar shown while navigating to another page --}}
+    <div id="nav-progress" class="nav-progress" aria-hidden="true"></div>
+
     <div class="flex min-h-full flex-col pb-24 sm:pb-0">
         <main class="mx-auto w-full max-w-3xl flex-1 px-4 py-6 sm:px-6 sm:py-8">
-            @if (session('success'))
-                <div class="animate-rise mb-6 flex items-center gap-3 rounded-2xl border border-brand-200 bg-brand-50/80 px-4 py-3 text-sm font-medium text-brand-800 shadow-sm">
-                    <span class="grid size-6 shrink-0 place-items-center rounded-full bg-brand-500 text-white">
-                        <x-icon name="check" class="size-3.5" stroke-width="3" />
-                    </span>
-                    {{ session('success') }}
-                </div>
-            @endif
+            {{-- Everything in here is swapped for the skeleton while the next page loads --}}
+            <div id="page-content">
+                @if (session('success'))
+                    <div class="animate-rise mb-6 flex items-center gap-3 rounded-2xl border border-brand-200 bg-brand-50/80 px-4 py-3 text-sm font-medium text-brand-800 shadow-sm">
+                        <span class="grid size-6 shrink-0 place-items-center rounded-full bg-brand-500 text-white">
+                            <x-icon name="check" class="size-3.5" stroke-width="3" />
+                        </span>
+                        {{ session('success') }}
+                    </div>
+                @endif
 
-            @if (session('error'))
-                <div class="animate-rise mb-6 flex items-center gap-3 rounded-2xl border border-rose-200 bg-rose-50/80 px-4 py-3 text-sm font-medium text-rose-800 shadow-sm">
-                    <span class="grid size-6 shrink-0 place-items-center rounded-full bg-rose-500 text-white">
-                        <x-icon name="alert" class="size-3.5" />
-                    </span>
-                    {{ session('error') }}
-                </div>
-            @endif
+                @if (session('error'))
+                    <div class="animate-rise mb-6 flex items-center gap-3 rounded-2xl border border-rose-200 bg-rose-50/80 px-4 py-3 text-sm font-medium text-rose-800 shadow-sm">
+                        <span class="grid size-6 shrink-0 place-items-center rounded-full bg-rose-500 text-white">
+                            <x-icon name="alert" class="size-3.5" />
+                        </span>
+                        {{ session('error') }}
+                    </div>
+                @endif
 
-            @if ($errors->any())
-                <div class="animate-rise mb-6 flex items-start gap-3 rounded-2xl border border-rose-200 bg-rose-50/80 px-4 py-3 text-sm text-rose-800 shadow-sm">
-                    <span class="mt-0.5 grid size-6 shrink-0 place-items-center rounded-full bg-rose-500 text-white">
-                        <x-icon name="alert" class="size-3.5" />
-                    </span>
-                    <ul class="list-inside list-disc space-y-0.5">
-                        @foreach ($errors->all() as $error)
-                            <li>{{ $error }}</li>
-                        @endforeach
-                    </ul>
-                </div>
-            @endif
+                @if ($errors->any())
+                    <div class="animate-rise mb-6 flex items-start gap-3 rounded-2xl border border-rose-200 bg-rose-50/80 px-4 py-3 text-sm text-rose-800 shadow-sm">
+                        <span class="mt-0.5 grid size-6 shrink-0 place-items-center rounded-full bg-rose-500 text-white">
+                            <x-icon name="alert" class="size-3.5" />
+                        </span>
+                        <ul class="list-inside list-disc space-y-0.5">
+                            @foreach ($errors->all() as $error)
+                                <li>{{ $error }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                @endif
 
-            @yield('content')
+                @yield('content')
+            </div>
+
+            <x-page-skeleton />
         </main>
 
         <footer class="mx-auto w-full max-w-3xl px-4 py-10 text-center sm:px-6">

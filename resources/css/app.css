@@ -42,6 +42,44 @@
     animation: rise 0.4s ease both;
 }
 
+/* Thin bar across the top while the next page loads: it creeps toward the
+   end without ever finishing, since the real duration isn't known. */
+@keyframes nav-progress {
+    from {
+        transform: scaleX(0);
+    }
+    10% {
+        transform: scaleX(0.35);
+    }
+    to {
+        transform: scaleX(0.95);
+    }
+}
+
+.nav-progress {
+    position: fixed;
+    inset: 0 0 auto 0;
+    z-index: 60;
+    height: 3px;
+    background-color: var(--color-brand-500);
+    transform: scaleX(0);
+    transform-origin: left;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.nav-progress.is-active {
+    opacity: 1;
+    animation: nav-progress 15s cubic-bezier(0.1, 0.7, 0.3, 1) forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .nav-progress.is-active {
+        animation: none;
+        transform: scaleX(1);
+    }
+}
+
 /* Respect the iOS/Android home-indicator area for the fixed mobile tab bar */
 .pb-safe {
     padding-bottom: env(safe-area-inset-bottom);

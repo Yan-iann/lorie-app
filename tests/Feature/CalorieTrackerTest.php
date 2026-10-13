@@ -28,7 +28,7 @@ class CalorieTrackerTest extends TestCase
 
         config()->set('services.ai.provider', 'groq');
         config()->set('services.groq.key', 'test-key');
-        config()->set('services.groq.model', 'llama-3.3-70b-versatile');
+        config()->set('services.groq.model', 'openai/gpt-oss-120b');
         config()->set('services.groq.vision_model', 'test-vision-model');
         config()->set('services.usda.key', 'TEST_KEY');
 
