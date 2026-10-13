@@ -75,9 +75,9 @@
                     <x-icon name="leaf" class="size-9" />
                 </span>
             @endif
-            <div class="flex-1 self-center rounded-2xl rounded-bl-md bg-white px-4 py-3 shadow-sm">
-                <p class="text-sm font-bold text-brand-600">{{ $mascotName }}</p>
-                <p class="mt-0.5 text-sm leading-snug text-slate-600" data-coach-message>{{ $coachMessage }}</p>
+            <div class="flex-1 self-center rounded-2xl rounded-bl-md bg-white px-3.5 py-2.5 shadow-sm">
+                <p class="text-xs font-bold text-brand-600">{{ $mascotName }}</p>
+                <p class="mt-0.5 text-[12px] leading-snug text-slate-600" data-coach-message>{{ $coachMessage }}</p>
             </div>
         </div>
     </div>
@@ -111,10 +111,11 @@
             <div class="flex flex-col items-center pr-3 text-center">
                 <p class="text-[11px] font-semibold tracking-wide text-slate-400 uppercase">Calories</p>
 
-                <div class="relative mt-3 size-28">
+                <div class="mt-3 grid h-28 place-items-center">
+                <div class="relative size-28">
                     <svg class="size-full -rotate-90" viewBox="0 0 160 160" role="img" aria-label="{{ $percent }}% of the calorie goal">
-                        <circle cx="80" cy="80" r="{{ $radius }}" fill="none" stroke="currentColor" stroke-width="16" class="text-slate-100" />
-                        <circle cx="80" cy="80" r="{{ $radius }}" fill="none" stroke="currentColor" stroke-width="16" stroke-linecap="round"
+                        <circle cx="80" cy="80" r="{{ $radius }}" fill="none" stroke="currentColor" stroke-width="13" class="text-slate-100" />
+                        <circle cx="80" cy="80" r="{{ $radius }}" fill="none" stroke="currentColor" stroke-width="13" stroke-linecap="round"
                                 class="{{ $ring }} transition-all duration-700"
                                 stroke-dasharray="{{ $circ }}" stroke-dashoffset="{{ $offset }}" />
                     </svg>
@@ -122,6 +123,7 @@
                         <x-icon name="flame" variant="fill" class="size-4 {{ $ring }}" />
                         <span class="text-lg leading-tight font-extrabold text-slate-900 tabular-nums">{{ $percent }}%</span>
                     </div>
+                </div>
                 </div>
 
                 <p class="mt-3 text-xl font-extrabold tracking-tight text-slate-900 tabular-nums">{{ number_format($totals['calories']) }}</p>

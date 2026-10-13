@@ -81,8 +81,44 @@ class DashboardSummaryTest extends TestCase
         $this->assertSame(2100, $week->averageCalories());
 
         // Bars are drawn against the tallest day; the goal line sits two thirds of the way up.
-        $this->assertSame(100.0, $week->barHeight(3000));
+        $this->assertSame(100.0, $week->calorieHeight(3000));
         $this->assertSame(66.7, $week->goalHeight());
+    }
+
+    public function test_the_week_shows_water_as_a_share_of_its_own_goal(): void
+    {
+        // Goal is 2.8 L (70 kg, moderate). Calorie goal is 2,000.
+        $this->eat(1000, '2026-10-13');
+        $this->user->waterLogs()->create(['amount_ml' => 1400, 'container' => 'bottle', 'consumed_on' => '2026-10-13']);
+        $this->user->waterLogs()->create(['amount_ml' => 700, 'container' => 'bottle', 'consumed_on' => '2026-10-12']);
+
+        $week = WeekSummary::for($this->user, '2026-10-13');
+
+        $this->assertSame(2800, $week->waterGoalMl);
+        $this->assertSame([0, 0, 0, 0, 0, 700, 1400], array_column($week->days, 'waterMl'));
+
+        // Half of each goal draws half-height bars; nobody went over, so the goal line is the top.
+        $this->assertSame(50.0, $week->calorieHeight(1000));
+        $this->assertSame(50.0, $week->waterHeight(1400));
+        $this->assertSame(25.0, $week->waterHeight(700));
+        $this->assertSame(100.0, $week->goalHeight());
+
+        // A day with water but no food still isn't a "logged" day for the streak dots.
+        $this->assertFalse($week->days[5]['logged']);
+
+        $this->get(route('dashboard'))
+            ->assertSee('Mon, Oct 12: no food logged, 0.7 L water')
+            ->assertSee('Tue, Oct 13: 1,000 kcal, 1.4 L water');
+    }
+
+    public function test_drinking_past_the_water_goal_rescales_the_chart(): void
+    {
+        $this->user->waterLogs()->create(['amount_ml' => 5600, 'container' => 'large-bottle', 'consumed_on' => '2026-10-13']);
+
+        $week = WeekSummary::for($this->user, '2026-10-13');
+
+        $this->assertSame(100.0, $week->waterHeight(5600));
+        $this->assertSame(50.0, $week->goalHeight());
     }
 
     public function test_the_week_strip_is_on_the_dashboard_and_links_to_each_day(): void
@@ -94,7 +130,7 @@ class DashboardSummaryTest extends TestCase
             ->assertSee('This week')
             ->assertSee('1 of 7 days · avg 1,800 kcal')
             ->assertSee(route('dashboard', ['date' => '2026-10-12']), false)
-            ->assertSee('Mon, Oct 12: 1,800 kcal');
+            ->assertSee('Mon, Oct 12: 1,800 kcal, no water');
     }
 
     public function test_the_week_belongs_to_the_signed_in_user(): void

@@ -1,29 +1,31 @@
 @props(['level' => 0])
 
 {{--
-    A glass that fills to `level` (0 to 1). The water is one group that slides
-    up and down inside the glass's outline, with two wave shapes drifting
-    across its surface (see app.css).
+    The water gauge: a circle that fills with water to `level` (0 to 1). It is
+    drawn on the same 160-unit grid as the calorie ring beside it, with the
+    same track, so the two gauges are the same shape and size.
+
+    The water is one group that slides up and down inside the circle, with two
+    wave shapes drifting across its surface (see app.css). The class names
+    still say "glass" from when this was drawn as a tumbler.
 --}}
-<svg {{ $attributes->merge(['class' => 'water-glass']) }} viewBox="0 0 100 130" style="--level: {{ $level }}"
+<svg {{ $attributes->merge(['class' => 'water-glass']) }} viewBox="0 0 160 160" style="--level: {{ $level }}"
      role="img" aria-label="{{ round($level * 100) }}% of the water goal">
     <defs>
         <clipPath id="water-glass-inside">
-            <path d="M13.6 7.5 H86.4 L78.5 117.8 Q78 122.5 73 122.5 H27 Q22 122.5 21.5 117.8 Z" />
+            <circle cx="80" cy="80" r="57.5" />
         </clipPath>
     </defs>
-
-    <path class="fill-sky-50" d="M12 6 H88 L80 118 Q79.3 124 73 124 H27 Q20.7 124 20 118 Z" />
 
     <g clip-path="url(#water-glass-inside)">
         <g class="water-glass__water">
             <path class="water-glass__wave water-glass__wave--back fill-sky-300"
-                  d="M-100 6 Q-87.5 0 -75 6 T-50 6 T-25 6 T0 6 T25 6 T50 6 T75 6 T100 6 T125 6 T150 6 T175 6 T200 6 V140 H-100 Z" />
+                  d="M-100 22 Q-87.5 15 -75 22 T-50 22 T-25 22 T0 22 T25 22 T50 22 T75 22 T100 22 T125 22 T150 22 T175 22 T200 22 T225 22 T250 22 T275 22 T300 22 V220 H-100 Z" />
             <path class="water-glass__wave fill-sky-400"
-                  d="M-100 8 Q-87.5 13 -75 8 T-50 8 T-25 8 T0 8 T25 8 T50 8 T75 8 T100 8 T125 8 T150 8 T175 8 T200 8 V140 H-100 Z" />
+                  d="M-100 25 Q-87.5 31 -75 25 T-50 25 T-25 25 T0 25 T25 25 T50 25 T75 25 T100 25 T125 25 T150 25 T175 25 T200 25 T225 25 T250 25 T275 25 T300 25 V220 H-100 Z" />
         </g>
     </g>
 
-    <path class="fill-none stroke-slate-300" stroke-width="3" stroke-linejoin="round"
-          d="M12 6 H88 L80 118 Q79.3 124 73 124 H27 Q20.7 124 20 118 Z" />
+    {{-- The same track as the calorie ring --}}
+    <circle cx="80" cy="80" r="64" fill="none" stroke="currentColor" stroke-width="13" class="text-slate-100" />
 </svg>

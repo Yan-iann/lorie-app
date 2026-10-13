@@ -44,8 +44,13 @@
     ];
 
     $svg = $icons["{$name}:{$variant}"] ?? $icons[$name] ?? '';
+
+    // Default to size-5 only when the caller didn't pick a size. Adding it
+    // alongside a smaller size-* class would override that class, because
+    // Tailwind emits the larger size later in the stylesheet.
+    $defaultSize = str_contains($attributes->get('class', ''), 'size-') ? '' : 'size-5';
 @endphp
 
-<svg {{ $attributes->merge(['class' => 'size-5']) }} viewBox="0 0 256 256" fill="currentColor" aria-hidden="true">
+<svg {{ $attributes->merge(['class' => $defaultSize]) }} viewBox="0 0 256 256" fill="currentColor" aria-hidden="true">
     {!! $svg !!}
 </svg>

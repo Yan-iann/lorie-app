@@ -287,13 +287,15 @@
     }
 }
 
-/* Water glass. The water group sits at the brim and is pushed down by however
-   much of the goal is still to drink, so changing --level makes it rise or
-   fall; 118 is the glass's inner height in the SVG's own units. Two waves
-   drift across the surface in opposite directions, each sliding by exactly
-   one wavelength (50 units) so the loop has no seam. */
+/* Water gauge (a circle that fills with water; the class names say "glass"
+   from when it was drawn as a tumbler). The water group sits at the top of the
+   circle and is pushed down by however much of the goal is still to drink, so
+   changing --level makes it rise or fall. 121 is the circle's inner height in
+   the SVG's own units plus the height of a wave, so that an empty gauge shows
+   no water at all. Two waves drift across the surface in opposite directions,
+   each sliding by exactly one wavelength (50 units) so the loop has no seam. */
 .water-glass__water {
-    transform: translateY(calc((1 - var(--level, 0)) * 114px + 4px));
+    transform: translateY(calc((1 - var(--level, 0)) * 121px));
     transition: transform 0.9s var(--ease-fluid);
 }
 
