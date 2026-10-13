@@ -18,11 +18,70 @@
     --color-brand-700: oklch(0.508 0.118 165);
     --color-brand-800: oklch(0.432 0.095 166);
     --color-brand-900: oklch(0.378 0.077 167);
+
+    /* Motion: every `transition` utility responds quickly and lands softly;
+       `ease-spring` adds a slight overshoot for things that pop into place. */
+    --default-transition-duration: 220ms;
+    --default-transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+    --ease-fluid: cubic-bezier(0.22, 1, 0.36, 1);
+    --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 @layer base {
     body {
         background-color: #f4f6f5;
+    }
+
+    /* Buttons give their own press feedback, so drop the grey flash on tap. */
+    a,
+    button,
+    label {
+        -webkit-tap-highlight-color: transparent;
+    }
+}
+
+/* Scrollbars: slim, rounded and in the main brand green (same as the buttons) where a mouse is used. */
+@supports selector(::-webkit-scrollbar) {
+    ::-webkit-scrollbar {
+        width: 10px;
+        height: 10px;
+    }
+
+    ::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    /* The transparent border insets the thumb, leaving a 6px pill. */
+    ::-webkit-scrollbar-thumb {
+        border: 2px solid transparent;
+        border-radius: 999px;
+        background-color: var(--color-brand-600);
+        background-clip: content-box;
+    }
+
+    ::-webkit-scrollbar-thumb:hover,
+    ::-webkit-scrollbar-thumb:active {
+        background-color: var(--color-brand-700);
+    }
+}
+
+/* Firefox has no ::-webkit-scrollbar; use the standard properties there. */
+@supports not selector(::-webkit-scrollbar) {
+    * {
+        scrollbar-width: thin;
+        scrollbar-color: var(--color-brand-600) transparent;
+    }
+}
+
+/* Hidden entirely on touch screens — there's nothing to drag with a finger,
+   and scrolling still works as normal. */
+@media (pointer: coarse) {
+    * {
+        scrollbar-width: none;
+    }
+
+    ::-webkit-scrollbar {
+        display: none;
     }
 }
 
@@ -40,6 +99,168 @@
 
 .animate-rise {
     animation: rise 0.4s ease both;
+}
+
+/* Things that appear in response to an action: overlays fade, cards pop. */
+@keyframes fade-in {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes pop-in {
+    from {
+        opacity: 0;
+        transform: translateY(8px) scale(0.94);
+    }
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+.animate-fade-in {
+    animation: fade-in 0.25s ease both;
+}
+
+.animate-pop-in {
+    animation: pop-in 0.4s var(--ease-spring) both;
+}
+
+/* "Add food" popup: grows out of the + button and settles with a soft spring;
+   on the way out it simply drops back, a little faster. Kept in the layout
+   while closed (invisible) so both directions can animate. */
+.add-food-panel {
+    visibility: hidden;
+    opacity: 0;
+    transform: translateY(16px) scale(0.94);
+    transform-origin: 50% 100%;
+    transition:
+        opacity 0.18s ease,
+        transform 0.18s cubic-bezier(0.4, 0, 1, 1),
+        height 0.32s var(--ease-fluid),
+        visibility 0s linear 0.18s;
+}
+
+.add-food-panel[data-open='true'] {
+    visibility: visible;
+    opacity: 1;
+    transform: none;
+    transition:
+        opacity 0.22s ease,
+        transform 0.42s var(--ease-spring),
+        height 0.32s var(--ease-fluid),
+        visibility 0s;
+}
+
+@media (min-width: 40rem) {
+    .add-food-panel {
+        transform-origin: 100% 100%;
+    }
+}
+
+.add-food-backdrop {
+    visibility: hidden;
+    opacity: 0;
+    transition:
+        opacity 0.25s ease,
+        visibility 0s linear 0.25s;
+}
+
+.add-food-backdrop[data-open='true'] {
+    visibility: visible;
+    opacity: 1;
+    transition:
+        opacity 0.25s ease,
+        visibility 0s;
+}
+
+/* Switching between the popup's two views: the new one slides up into place. */
+@keyframes view-in {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+.add-food-panel [data-add-food-view] {
+    animation: view-in 0.32s var(--ease-fluid) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .animate-fade-in,
+    .animate-pop-in,
+    .add-food-panel [data-add-food-view] {
+        animation: none;
+    }
+
+    .add-food-panel,
+    .add-food-panel[data-open='true'],
+    .add-food-backdrop,
+    .add-food-backdrop[data-open='true'] {
+        transform: none;
+        transition: none;
+    }
+}
+
+/* Mascot: stands on its feet, slowly breathing and swaying. The image is one
+   flat piece, so all motion pivots from the bottom edge to keep it grounded. */
+@keyframes mascot-idle {
+    0%,
+    100% {
+        transform: rotate(-1.2deg) scaleY(1);
+    }
+    50% {
+        transform: rotate(1.2deg) scaleY(1.025);
+    }
+}
+
+/* A happy hop for good news: crouch, jump, land with a little bounce. */
+@keyframes mascot-cheer {
+    0% {
+        transform: translateY(0) scale(1, 1);
+    }
+    18% {
+        transform: translateY(0) scale(1.05, 0.93);
+    }
+    42% {
+        transform: translateY(-18px) scale(0.97, 1.05) rotate(-4deg);
+    }
+    62% {
+        transform: translateY(0) scale(1.04, 0.95);
+    }
+    80% {
+        transform: translateY(-6px) scale(1, 1) rotate(3deg);
+    }
+    100% {
+        transform: translateY(0) rotate(-1.2deg) scaleY(1);
+    }
+}
+
+.mascot {
+    transform-origin: 50% 100%;
+    animation: mascot-idle 4.5s ease-in-out infinite;
+}
+
+/* Hop once (after the page has settled), then carry on idling. */
+.mascot.mascot-cheer {
+    animation:
+        mascot-idle 4.5s ease-in-out 1.4s infinite,
+        mascot-cheer 0.9s ease-out 0.5s 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .mascot,
+    .mascot.mascot-cheer {
+        animation: none;
+    }
 }
 
 /* Thin bar across the top while the next page loads: it creeps toward the
@@ -80,9 +301,10 @@
     }
 }
 
-/* Respect the iOS/Android home-indicator area for the fixed mobile tab bar */
+/* Bottom padding for the fixed mobile tab bar: the iOS/Android home-indicator
+   area where there is one, and never less than a comfortable 10px. */
 .pb-safe {
-    padding-bottom: env(safe-area-inset-bottom);
+    padding-bottom: max(env(safe-area-inset-bottom), 0.625rem);
 }
 
 /* Hide number-input spinners for a cleaner look */

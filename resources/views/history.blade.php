@@ -19,7 +19,7 @@
             $barColor = $over ? 'bg-rose-500' : ($percent >= 80 ? 'bg-amber-500' : 'bg-brand-500');
         @endphp
         <a href="{{ route('dashboard', ['date' => $date->toDateString()]) }}"
-           class="animate-rise group mb-2.5 block rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm transition hover:border-brand-300 hover:shadow-md">
+           class="animate-rise group mb-2.5 block rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm transition hover:border-brand-300 hover:shadow-md active:scale-[0.99]">
             <div class="flex items-center justify-between gap-3">
                 <div class="min-w-0">
                     <p class="font-semibold text-slate-900">
@@ -46,7 +46,7 @@
     @empty
         <div class="rounded-2xl border border-dashed border-slate-300 bg-white/60 px-4 py-14 text-center">
             <span class="mx-auto grid size-12 place-items-center rounded-2xl bg-slate-100 text-slate-400">
-                <x-icon name="inbox" class="size-6" />
+                <x-icon name="inbox" class="size-7" />
             </span>
             <p class="mt-3 text-sm font-medium text-slate-500">No history yet.</p>
             <p class="text-xs text-slate-400">Start logging on the <a href="{{ route('dashboard') }}" class="font-medium text-brand-600 hover:underline">Today</a> page.</p>

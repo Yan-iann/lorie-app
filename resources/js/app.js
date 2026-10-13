@@ -107,30 +107,74 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // "+" button scrolls to the Add food section without leaving a #hash in the URL.
-    document.querySelectorAll('a[data-add-food]').forEach((link) => {
-        link.addEventListener('click', (event) => {
-            const section = document.getElementById('add-food');
-            if (section) {
-                event.preventDefault();
-                section.scrollIntoView({ behavior: 'smooth' });
-            } else {
-                // On another page — remember to scroll once the dashboard loads.
-                sessionStorage.setItem('scrollToAddFood', '1');
-            }
-        });
-    });
+    // Pages open at the top.
+    window.scrollTo(0, 0);
 
-    // On load: jump to Add food once (after tapping + from another page), else the top.
-    if (sessionStorage.getItem('scrollToAddFood')) {
-        sessionStorage.removeItem('scrollToAddFood');
-        document.getElementById('add-food')?.scrollIntoView();
-    } else {
-        window.scrollTo(0, 0);
-    }
-
+    initAddFood();
     initProfileSuggestion();
 });
+
+// "Add food" popup behind the + button: a short menu (type it / take a photo),
+// then the text form if the user chose to type.
+function initAddFood() {
+    const panel = document.getElementById('add-food-panel');
+    const backdrop = document.getElementById('add-food-backdrop');
+    if (!panel || !backdrop) return;
+
+    const toggles = document.querySelectorAll('[data-add-food-toggle]');
+    const views = panel.querySelectorAll('[data-add-food-view]');
+    const isOpen = () => panel.dataset.open === 'true';
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+    let heightTimer = null;
+
+    const show = (name) => {
+        const from = panel.offsetHeight;
+        views.forEach((view) => view.classList.toggle('hidden', view.dataset.addFoodView !== name));
+
+        // The two views differ in height: glide between them instead of snapping.
+        if (isOpen() && !reducedMotion.matches) {
+            panel.style.height = '';
+            const to = panel.offsetHeight;
+            panel.style.height = `${from}px`;
+            void panel.offsetHeight; // commit the starting height before animating
+            panel.style.height = `${to}px`;
+            clearTimeout(heightTimer);
+            heightTimer = setTimeout(() => (panel.style.height = ''), 350);
+        }
+
+        if (isOpen()) focusFirst();
+    };
+
+    const focusFirst = () => {
+        const typeView = panel.querySelector('[data-add-food-view="type"]');
+        const typing = typeView && !typeView.classList.contains('hidden');
+        const first = typing ? panel.querySelector('input[name="description"]') : panel.querySelector('[data-add-food-show="type"]');
+        first?.focus({ preventScroll: true });
+    };
+
+    const setOpen = (open, view = 'menu') => {
+        if (open && !isOpen()) show(view);
+        panel.dataset.open = String(open);
+        backdrop.dataset.open = String(open);
+        toggles.forEach((toggle) => {
+            toggle.setAttribute('aria-expanded', String(open));
+            toggle.setAttribute('aria-label', open ? 'Close' : 'Add food');
+        });
+        if (open) focusFirst();
+    };
+
+    toggles.forEach((toggle) => toggle.addEventListener('click', () => setOpen(!isOpen())));
+    panel.querySelectorAll('[data-add-food-show]').forEach((button) => {
+        button.addEventListener('click', () => show(button.dataset.addFoodShow));
+    });
+    backdrop.addEventListener('click', () => setOpen(false));
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && isOpen()) setOpen(false);
+    });
+
+    // Reopen on the text form when the server sent the description back with an error.
+    if (panel.dataset.initialView) setOpen(true, panel.dataset.initialView);
+}
 
 // Live daily-calorie suggestion on the profile form (Mifflin-St Jeor + activity).
 function initProfileSuggestion() {

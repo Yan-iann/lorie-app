@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Services\DailyFoodFact;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -10,7 +11,7 @@ use Illuminate\Support\Carbon;
 
 class DashboardController extends Controller
 {
-    public function index(Request $request): View|RedirectResponse
+    public function index(Request $request, DailyFoodFact $foodFact): View|RedirectResponse
     {
         $user = $request->user();
 
@@ -55,6 +56,7 @@ class DashboardController extends Controller
             'streak' => $streak,
             'coachMessage' => $coachMessage,
             'mascotName' => 'Lorie',
+            'foodFact' => $foodFact->today(),
         ]);
     }
 

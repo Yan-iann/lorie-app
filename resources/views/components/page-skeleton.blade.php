@@ -1,5 +1,5 @@
 {{-- Placeholder swapped in for the page content while the next page loads (see app.js) --}}
-<div id="page-skeleton" class="hidden" role="status">
+<div id="page-skeleton" class="animate-fade-in hidden" role="status">
     <span class="sr-only">Loading…</span>
 
     <div class="flex animate-pulse flex-col gap-6 motion-reduce:animate-none" aria-hidden="true">

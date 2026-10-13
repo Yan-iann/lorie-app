@@ -8,14 +8,22 @@ use App\Models\FoodEntry;
 use App\Models\User;
 use App\Services\CalorieEstimationException;
 use App\Services\NutritionAnalyzer;
+use App\Support\DailyEntryAllowance;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Str;
 
 class FoodEntryController extends Controller
 {
+    public function __construct(private readonly DailyEntryAllowance $allowance) {}
+
     public function store(StoreFoodEntryRequest $request, NutritionAnalyzer $analyzer): RedirectResponse
     {
+        if ($this->allowance->exhausted($request->user())) {
+            return $this->limitReached();
+        }
+
         $validated = $request->validated();
         $date = $validated['consumed_on'] ?? today()->toDateString();
 
@@ -32,6 +40,10 @@ class FoodEntryController extends Controller
 
     public function storePhoto(StoreFoodPhotoRequest $request, NutritionAnalyzer $analyzer): RedirectResponse
     {
+        if ($this->allowance->exhausted($request->user())) {
+            return $this->limitReached();
+        }
+
         $validated = $request->validated();
         $date = $validated['consumed_on'] ?? today()->toDateString();
 
@@ -42,7 +54,7 @@ class FoodEntryController extends Controller
             return back()->with('error', $e->getMessage());
         }
 
-        return $this->saveAndRedirect($request->user(), $analysis, $date, '📷 ');
+        return $this->saveAndRedirect($request->user(), $analysis, $date);
     }
 
     public function destroy(FoodEntry $foodEntry): RedirectResponse
@@ -60,16 +72,30 @@ class FoodEntryController extends Controller
     /**
      * @param  array<string, mixed>  $analysis
      */
-    private function saveAndRedirect(User $user, array $analysis, string $date, string $prefix = ''): RedirectResponse
+    private function saveAndRedirect(User $user, array $analysis, string $date): RedirectResponse
     {
         $entry = $user->foodEntries()->create([
             ...$analysis,
             'consumed_on' => $date,
         ]);
 
+        $this->allowance->record($user);
+
+        $message = "Added {$entry->name} — {$entry->calories} kcal.";
+        $left = $this->allowance->remaining($user);
+
+        if ($left !== null) {
+            $message .= ' '.($left === 0 ? "That's your last entry for today." : "{$left} ".Str::plural('entry', $left).' left today.');
+        }
+
         return redirect()
             ->route('dashboard', ['date' => $date])
-            ->with('success', "{$prefix}Added {$entry->name} — {$entry->calories} kcal.");
+            ->with('success', $message);
+    }
+
+    private function limitReached(): RedirectResponse
+    {
+        return back()->with('error', "You've used all {$this->allowance->limit()} of today's entries. You can add more tomorrow.");
     }
 
     /**

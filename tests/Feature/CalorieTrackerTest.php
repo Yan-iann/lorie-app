@@ -4,7 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\FoodEntry;
 use App\Models\User;
-use App\Services\DailyTip;
+use App\Services\DailyFoodFact;
 use App\Services\Usda\UsdaFoodClient;
 use App\Support\CalorieCalculator;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -36,8 +36,8 @@ class CalorieTrackerTest extends TestCase
         $this->user = User::factory()->onboarded()->create();
         $this->actingAs($this->user);
 
-        // Pre-seed today's tip so page renders don't call the AI.
-        Cache::put(DailyTip::key(), 'Fill half your plate with vegetables.', now()->addDay());
+        // Pre-seed today's food fact so page renders don't call the AI.
+        Cache::put(DailyFoodFact::key(), 'Bananas are berries.', now()->addDay());
     }
 
     /** @return array<string, mixed> */
@@ -386,34 +386,12 @@ class CalorieTrackerTest extends TestCase
         $this->assertSame(2600, $user->daily_goal);
     }
 
-    public function test_daily_tip_is_generated_by_ai_cleaned_and_cached(): void
+    public function test_the_food_fact_is_only_shown_on_the_dashboard(): void
     {
-        Cache::forget(DailyTip::key());
+        $this->get(route('dashboard'))->assertOk()->assertSee('Did you know?')->assertSee('Bananas are berries.');
 
-        Http::fake([
-            'api.groq.com/*' => Http::response($this->aiText('“Drink a glass of water before each meal.”')),
-        ]);
-
-        // Surrounding quotes are stripped.
-        $this->assertSame('Drink a glass of water before each meal.', app(DailyTip::class)->today());
-
-        // Cached for the day — a changed API response is not used on the next call.
-        Http::fake([
-            'api.groq.com/*' => Http::response($this->aiText('Something different')),
-        ]);
-        $this->assertSame('Drink a glass of water before each meal.', app(DailyTip::class)->today());
-    }
-
-    public function test_daily_tip_falls_back_when_ai_is_unavailable(): void
-    {
-        Cache::forget(DailyTip::key());
-
-        Http::fake([
-            'api.groq.com/*' => Http::response('error', 500),
-        ]);
-
-        // A non-empty curated tip is returned instead of failing.
-        $this->assertNotEmpty(app(DailyTip::class)->today());
+        $this->get(route('history'))->assertOk()->assertDontSee('Did you know?');
+        $this->get(route('profile'))->assertOk()->assertDontSee('Did you know?');
     }
 
     public function test_calorie_calculator_recommends_from_body_metrics(): void

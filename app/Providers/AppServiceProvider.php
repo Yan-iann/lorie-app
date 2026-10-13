@@ -7,7 +7,10 @@ use App\Services\FallbackNutritionAssistant;
 use App\Services\Gemini\GeminiNutritionAssistant;
 use App\Services\Groq\GroqNutritionAssistant;
 use App\Services\Usda\UsdaFoodClient;
+use App\Support\DailyEntryAllowance;
+use Illuminate\Contracts\View\View as ViewContract;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -80,5 +83,16 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Model::shouldBeStrict(! $this->app->isProduction());
+
+        // The "Add food" popup shows how many entries the signed-in user has left today.
+        View::composer('components.add-food', function (ViewContract $view) {
+            $allowance = $this->app->make(DailyEntryAllowance::class);
+            $user = auth()->user();
+
+            $view->with([
+                'entryLimit' => $allowance->limit(),
+                'entriesLeft' => $user ? $allowance->remaining($user) : null,
+            ]);
+        });
     }
 }

@@ -14,7 +14,7 @@
         <div class="animate-rise mb-6">
             <div class="flex items-end gap-2 rounded-2xl bg-brand-600 px-3 py-3">
                 @if ($hasMascot)
-                    <img src="{{ asset('images/mascot.png') }}" alt="Lorie the mascot" class="-mt-9 -mb-3 h-36 w-auto shrink-0 self-end drop-shadow-lg sm:h-40">
+                    <img src="{{ asset('images/mascot.png') }}" alt="Lorie the mascot" class="mascot -mt-9 -mb-3 h-36 w-auto shrink-0 self-end drop-shadow-lg sm:h-40">
                 @else
                     <span class="grid size-20 shrink-0 place-items-center self-center rounded-2xl bg-white/20 text-white">
                         <x-icon name="leaf" class="size-9" />
@@ -31,7 +31,7 @@
     @else
         <div class="animate-rise mb-6 flex items-center gap-2.5">
             <span class="grid size-9 place-items-center rounded-xl bg-slate-100 text-slate-500">
-                <x-icon name="settings" class="size-5" />
+                <x-icon name="user" variant="duotone" class="size-5" />
             </span>
             <h1 class="text-xl font-bold tracking-tight text-slate-900">Profile</h1>
         </div>
@@ -116,11 +116,11 @@
         </div>
 
         <div class="flex items-center gap-3 pt-1">
-            <button type="submit" class="flex-1 rounded-xl bg-brand-600 px-6 py-3 text-sm font-semibold text-white transition hover:bg-brand-700 active:scale-95">
+            <button type="submit" class="flex-1 cursor-pointer rounded-xl bg-brand-600 px-6 py-3 text-sm font-semibold text-white transition hover:bg-brand-700 active:scale-95">
                 {{ $onboarding ? 'Get started' : 'Save profile' }}
             </button>
             @unless ($onboarding)
-                <a href="{{ route('dashboard') }}" class="rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-600 shadow-sm transition hover:text-slate-900">Back</a>
+                <a href="{{ route('dashboard') }}" class="rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-600 shadow-sm transition hover:text-slate-900 active:scale-95">Back</a>
             @endunless
         </div>
     </form>
@@ -131,9 +131,9 @@
             <p class="text-xs font-semibold tracking-wide text-slate-400 uppercase">Signed in as</p>
             <p class="mt-0.5 truncate text-sm font-medium text-slate-700">{{ $email }}</p>
         </div>
-        <form method="POST" action="{{ route('logout') }}">
+        <form method="POST" action="{{ route('logout') }}" class="shrink-0">
             @csrf
-            <button type="submit" class="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-600 shadow-sm transition hover:text-rose-600 active:scale-95">
+            <button type="submit" class="shrink-0 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold whitespace-nowrap text-slate-600 shadow-sm transition hover:text-rose-600 active:scale-95">
                 Log out
             </button>
         </form>

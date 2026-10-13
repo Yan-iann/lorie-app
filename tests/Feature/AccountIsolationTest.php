@@ -5,7 +5,7 @@ namespace Tests\Feature;
 use App\Models\FoodEntry;
 use App\Models\Setting;
 use App\Models\User;
-use App\Services\DailyTip;
+use App\Services\DailyFoodFact;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
@@ -22,8 +22,8 @@ class AccountIsolationTest extends TestCase
         $this->withoutVite();
         Http::preventStrayRequests();
 
-        // Pre-seed today's tip so page renders don't call the AI.
-        Cache::put(DailyTip::key(), 'Fill half your plate with vegetables.', now()->addDay());
+        // Pre-seed today's food fact so page renders don't call the AI.
+        Cache::put(DailyFoodFact::key(), 'Bananas are berries.', now()->addDay());
     }
 
     /** @return array<string, string> */

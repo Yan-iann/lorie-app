@@ -51,6 +51,9 @@ return [
         'fallback' => env('AI_FALLBACK_PROVIDER', 'groq'),
         // Minutes to keep routing to the fallback after the primary hits its quota.
         'fallback_cooldown' => (int) env('AI_FALLBACK_COOLDOWN_MINUTES', 30),
+        // Food entries each person may add per day (the AI quota is shared by
+        // everyone). Set to 0 for no cap.
+        'daily_entries_per_user' => (int) env('AI_DAILY_ENTRIES_PER_USER', 15),
     ],
 
     'groq' => [

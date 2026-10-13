@@ -194,14 +194,11 @@ class GeminiNutritionAssistant implements NutritionAssistant
         ];
     }
 
-    public function dailyTip(): string
+    public function shortText(string $prompt, float $temperature = 0.9): string
     {
         if (! $this->isConfigured()) {
             throw new CalorieEstimationException('The Gemini API key is not configured.');
         }
-
-        $today = today()->format('l, F j');
-        $prompt = "Give ONE short, practical healthy-eating tip for the day ({$today}) — about nutrition, food choices, portion sizes, hydration, or meal prep. Make it specific and actionable, under 20 words. Reply with ONLY the tip text: no numbering, no quotation marks, no preamble.";
 
         $endpoint = "https://generativelanguage.googleapis.com/v1beta/models/{$this->model}:generateContent";
 
@@ -212,6 +209,7 @@ class GeminiNutritionAssistant implements NutritionAssistant
                 ->retry(2, 500, throw: false)
                 ->post($endpoint, [
                     'contents' => [['parts' => [['text' => $prompt]]]],
+                    'generationConfig' => ['temperature' => $temperature],
                 ]);
         } catch (ConnectionException $e) {
             $this->throwConnectionFailure($e);

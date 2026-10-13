@@ -57,11 +57,11 @@ class FallbackNutritionAssistant implements NutritionAssistant
         );
     }
 
-    public function dailyTip(): string
+    public function shortText(string $prompt, float $temperature = 0.9): string
     {
         return $this->withFallback(
-            'dailyTip',
-            fn (NutritionAssistant $a) => $a->dailyTip(),
+            'shortText',
+            fn (NutritionAssistant $a) => $a->shortText($prompt, $temperature),
         );
     }
 

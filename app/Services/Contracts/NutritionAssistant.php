@@ -41,9 +41,12 @@ interface NutritionAssistant
     public function verify(string $description, array $breakdown, array $totals): array;
 
     /**
-     * Generate a short, practical healthy-eating tip for the day.
+     * Answer a prompt with a short piece of plain text (used for the daily
+     * food fact). The default temperature is higher than the nutrition calls
+     * use, so wording and choice of subject vary between requests; pass 0 for
+     * a steady, repeatable answer.
      *
      * @throws CalorieEstimationException
      */
-    public function dailyTip(): string;
+    public function shortText(string $prompt, float $temperature = 0.9): string;
 }

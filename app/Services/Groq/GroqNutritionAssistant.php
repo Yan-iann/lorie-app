@@ -136,16 +136,16 @@ class GroqNutritionAssistant implements NutritionAssistant
         ];
     }
 
-    public function dailyTip(): string
+    public function shortText(string $prompt, float $temperature = 0.9): string
     {
-        $today = today()->format('l, F j');
-
-        $prompt = "Give ONE short, practical healthy-eating tip for the day ({$today}) — about nutrition, food choices, portion sizes, hydration, or meal prep. Make it specific and actionable, under 20 words. Reply with ONLY the tip text: no numbering, no quotation marks, no preamble.";
-
-        return trim($this->request($this->model, [
-            ['role' => 'system', 'content' => 'You reply with a single short, practical tip and nothing else.'],
-            ['role' => 'user', 'content' => $prompt],
-        ]));
+        return trim($this->request(
+            model: $this->model,
+            messages: [
+                ['role' => 'system', 'content' => 'You reply with the requested text and nothing else.'],
+                ['role' => 'user', 'content' => $prompt],
+            ],
+            temperature: $temperature,
+        ));
     }
 
     /**
@@ -180,7 +180,7 @@ class GroqNutritionAssistant implements NutritionAssistant
      *
      * @throws CalorieEstimationException
      */
-    private function request(string $model, array $messages, bool $jsonMode = false): string
+    private function request(string $model, array $messages, bool $jsonMode = false, float $temperature = 0.2): string
     {
         if (! $this->isConfigured()) {
             throw new CalorieEstimationException('The Groq API key is not configured. Add GROQ_API_KEY to your .env file.');
@@ -189,7 +189,7 @@ class GroqNutritionAssistant implements NutritionAssistant
         $payload = [
             'model' => $model,
             'messages' => $messages,
-            'temperature' => 0.2,
+            'temperature' => $temperature,
         ];
 
         if ($jsonMode) {

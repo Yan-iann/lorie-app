@@ -2,6 +2,9 @@
 
 @section('title', 'Today · Calorie Tracker')
 
+{{-- Entries added from the + popup go to the day being viewed --}}
+@section('add-food-date', $date)
+
 @php
     use Illuminate\Support\Carbon;
 
@@ -35,7 +38,7 @@
         <div class="flex items-center justify-between gap-2">
             @if ($streak > 0)
                 <span class="inline-flex items-center gap-1.5 rounded-full bg-orange-100 px-3 py-1.5 text-sm font-semibold text-orange-700">
-                    <x-icon name="flame" class="size-4" /> x{{ $streak }} day streak!
+                    <x-icon name="flame" variant="fill" class="size-4" /> x{{ $streak }} day streak!
                 </span>
             @else
                 <span class="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1.5 text-sm font-semibold text-slate-500">
@@ -44,11 +47,11 @@
             @endif
 
             <div class="flex items-center gap-2">
-                <a href="{{ route('history') }}" class="grid size-10 place-items-center rounded-full bg-white text-slate-500 shadow-sm ring-1 ring-slate-200/70 transition hover:text-brand-600" aria-label="History">
-                    <x-icon name="clock" class="size-[18px]" />
+                <a href="{{ route('history') }}" class="grid size-10 place-items-center rounded-full bg-white text-slate-500 shadow-sm ring-1 ring-slate-200/70 transition hover:text-brand-600 active:scale-90" aria-label="History">
+                    <x-icon name="clock" class="size-5" />
                 </a>
-                <a href="{{ route('profile') }}" class="grid size-10 place-items-center rounded-full bg-white text-slate-500 shadow-sm ring-1 ring-slate-200/70 transition hover:text-brand-600" aria-label="Profile">
-                    <x-icon name="settings" class="size-[18px]" />
+                <a href="{{ route('profile') }}" class="grid size-10 place-items-center rounded-full bg-white text-slate-500 shadow-sm ring-1 ring-slate-200/70 transition hover:text-brand-600 active:scale-90" aria-label="Profile">
+                    <x-icon name="user" class="size-5" />
                 </a>
             </div>
         </div>
@@ -61,7 +64,7 @@
     <div class="animate-rise mb-6">
         <div class="relative flex items-end gap-2 rounded-2xl bg-brand-600 px-3 pt-3 pb-3">
             @if ($hasMascot)
-                <img src="{{ $mascotSrc }}" alt="{{ $mascotName }} the mascot" class="-mt-9 -mb-3 h-36 w-auto shrink-0 self-end drop-shadow-lg sm:h-40">
+                <img src="{{ $mascotSrc }}" alt="{{ $mascotName }} the mascot" class="mascot {{ session('success') ? 'mascot-cheer' : '' }} -mt-9 -mb-3 h-36 w-auto shrink-0 self-end drop-shadow-lg sm:h-40">
             @else
                 <span class="grid size-20 shrink-0 place-items-center self-center rounded-2xl bg-white/20 text-white">
                     <x-icon name="leaf" class="size-9" />
@@ -108,7 +111,7 @@
                             stroke-dasharray="{{ $circ }}" stroke-dashoffset="{{ $offset }}" />
                 </svg>
                 <div class="absolute inset-0 flex flex-col items-center justify-center">
-                    <x-icon name="flame" class="mb-1 size-5 {{ $ring }}" />
+                    <x-icon name="flame" variant="fill" class="mb-1 size-5 {{ $ring }}" />
                     <span class="text-4xl font-extrabold tracking-tight text-slate-900">{{ number_format($totals['calories']) }}</span>
                     <span class="text-xs font-medium text-slate-400">of {{ number_format($goal) }} kcal</span>
                     <span class="mt-1 rounded-full px-2 py-0.5 text-[11px] font-bold {{ $over ? 'bg-rose-100 text-rose-600' : 'bg-brand-100 text-brand-700' }}">{{ $percent }}%</span>
@@ -150,51 +153,6 @@
         </div>
     </section>
 
-    {{-- Add food form --}}
-    <section id="add-food" class="animate-rise mb-6 scroll-mt-20 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-        <h2 class="flex items-center gap-2 text-base font-bold text-slate-900">
-            <span class="grid size-7 place-items-center rounded-lg bg-brand-100 text-brand-600">
-                <x-icon name="plus" class="size-4" />
-            </span>
-            Add food
-        </h2>
-        <p class="mb-4 mt-1 text-sm text-slate-500">
-            Describe it in plain language. AI breaks it down and looks up real nutrition data.
-        </p>
-        <form method="POST" action="{{ route('entries.store') }}" class="flex flex-col gap-3 sm:flex-row" data-loading="Analyzing your food…">
-            @csrf
-            <input type="hidden" name="consumed_on" value="{{ $date }}">
-            <input type="text" name="description" value="{{ old('description') }}" required autofocus
-                   placeholder="e.g. chicken adobo with rice"
-                   class="flex-1 rounded-xl border border-slate-300 bg-slate-50/50 px-4 py-3 text-sm shadow-sm outline-none transition focus:border-brand-500 focus:bg-white focus:ring-4 focus:ring-brand-500/15">
-            <button type="submit"
-                    class="inline-flex items-center justify-center gap-2 rounded-xl bg-brand-600 px-6 py-3 text-sm font-semibold text-white transition hover:bg-brand-700 active:scale-95 focus:ring-4 focus:ring-brand-600/20">
-                <x-icon name="sparkles" class="size-4" />
-                Estimate &amp; add
-            </button>
-        </form>
-
-        {{-- Divider --}}
-        <div class="my-4 flex items-center gap-3 text-xs font-medium text-slate-400">
-            <span class="h-px flex-1 bg-slate-200"></span>
-            OR
-            <span class="h-px flex-1 bg-slate-200"></span>
-        </div>
-
-        {{-- Photo capture --}}
-        <form method="POST" action="{{ route('entries.photo') }}" enctype="multipart/form-data" data-loading="Looking at your photo…">
-            @csrf
-            <input type="hidden" name="consumed_on" value="{{ $date }}">
-            <input type="file" name="photo" id="photo-input" accept="image/*" capture="environment" class="sr-only" data-autosubmit>
-            <label for="photo-input"
-                   class="flex cursor-pointer items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-300 bg-slate-50/50 px-4 py-4 text-sm font-semibold text-slate-600 transition hover:border-brand-400 hover:bg-brand-50/40 hover:text-brand-700">
-                <x-icon name="camera" class="size-5" />
-                Take or upload a food photo
-            </label>
-        </form>
-        <p class="mt-2 text-center text-xs text-slate-400">AI identifies the food, then looks up real nutrition data.</p>
-    </section>
-
     {{-- Entries list --}}
     <section class="mb-6">
         <h2 class="mb-3 flex items-center justify-between px-1 text-sm font-bold tracking-wide text-slate-500 uppercase">
@@ -234,8 +192,8 @@
                           onsubmit="return confirm('Remove this entry?')">
                         @csrf
                         @method('DELETE')
-                        <button type="submit" class="grid size-8 place-items-center rounded-lg text-slate-300 transition hover:bg-rose-50 hover:text-rose-600" title="Remove" aria-label="Remove entry">
-                            <x-icon name="trash" class="size-4" />
+                        <button type="submit" class="grid size-8 cursor-pointer place-items-center rounded-lg text-slate-300 transition hover:bg-rose-50 hover:text-rose-600 active:scale-90" title="Remove" aria-label="Remove entry">
+                            <x-icon name="trash" class="size-[18px]" />
                         </button>
                     </form>
                 </div>
@@ -267,11 +225,13 @@
         @empty
             <div class="rounded-2xl border border-dashed border-slate-300 bg-white/60 px-4 py-12 text-center">
                 <span class="mx-auto grid size-12 place-items-center rounded-2xl bg-slate-100 text-slate-400">
-                    <x-icon name="utensils" class="size-6" />
+                    <x-icon name="utensils" class="size-7" />
                 </span>
                 <p class="mt-3 text-sm font-medium text-slate-500">Nothing logged {{ $isToday ? 'yet today' : 'for this day' }}.</p>
-                <p class="text-xs text-slate-400">Add your first food above to get started.</p>
+                <p class="text-xs text-slate-400">Tap the + button to add your first food.</p>
             </div>
         @endforelse
     </section>
+
+    <x-food-fact :fact="$foodFact" />
 @endsection

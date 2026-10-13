@@ -5,7 +5,7 @@
 
 <div {{ $attributes->merge(['class' => 'animate-rise flex items-end gap-2 rounded-2xl bg-brand-600 px-3 py-3']) }}>
     @if ($hasMascot)
-        <img src="{{ asset('images/mascot.png') }}" alt="Lorie the mascot" class="-mt-9 -mb-3 h-36 w-auto shrink-0 self-end drop-shadow-lg sm:h-40">
+        <img src="{{ asset('images/mascot.png') }}" alt="Lorie the mascot" class="mascot -mt-9 -mb-3 h-36 w-auto shrink-0 self-end drop-shadow-lg sm:h-40">
     @else
         <span class="grid size-20 shrink-0 place-items-center self-center rounded-2xl bg-white/20 text-white">
             <x-icon name="leaf" class="size-9" />
