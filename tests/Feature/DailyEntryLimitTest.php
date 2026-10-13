@@ -138,10 +138,10 @@ class DailyEntryLimitTest extends TestCase
 
     public function test_the_popup_shows_what_is_left_and_closes_off_when_nothing_is(): void
     {
-        $this->get(route('dashboard'))->assertOk()->assertSee('2 of 2 entries left today')->assertSee('Type it');
+        $this->get(route('dashboard'))->assertOk()->assertSee('2 of 2 food entries left today')->assertSee('Type it');
 
         $this->addEntry();
-        $this->get(route('dashboard'))->assertSee('1 of 2 entries left today');
+        $this->get(route('dashboard'))->assertSee('1 of 2 food entries left today');
 
         $this->addEntry();
         $this->get(route('dashboard'))
@@ -158,6 +158,6 @@ class DailyEntryLimitTest extends TestCase
             $this->addEntry()->assertSessionHas('success', 'Added Apple — 52 kcal.');
         }
 
-        $this->get(route('dashboard'))->assertOk()->assertDontSee('entries left today');
+        $this->get(route('dashboard'))->assertOk()->assertDontSee('food entries left today');
     }
 }

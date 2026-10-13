@@ -3,6 +3,7 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Support\WaterCalculator;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -11,7 +12,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-#[Fillable(['name', 'email', 'password', 'gender', 'height_cm', 'weight_kg', 'activity_level', 'daily_goal'])]
+#[Fillable(['name', 'email', 'password', 'gender', 'height_cm', 'weight_kg', 'activity_level', 'daily_goal', 'daily_water_goal_ml', 'lorie_language'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
@@ -30,6 +31,8 @@ class User extends Authenticatable
         'weight_kg' => null,
         'activity_level' => 'moderate',
         'daily_goal' => 2000,
+        'daily_water_goal_ml' => null,
+        'lorie_language' => 'mix',
         'profile_completed_at' => null,
     ];
 
@@ -46,6 +49,7 @@ class User extends Authenticatable
             'height_cm' => 'float',
             'weight_kg' => 'float',
             'daily_goal' => 'integer',
+            'daily_water_goal_ml' => 'integer',
             'profile_completed_at' => 'datetime',
         ];
     }
@@ -56,6 +60,24 @@ class User extends Authenticatable
     public function foodEntries(): HasMany
     {
         return $this->hasMany(FoodEntry::class);
+    }
+
+    /**
+     * @return HasMany<WaterLog, $this>
+     */
+    public function waterLogs(): HasMany
+    {
+        return $this->hasMany(WaterLog::class);
+    }
+
+    /**
+     * Daily water goal in millilitres: the user's own figure if they set one,
+     * otherwise the amount suggested from their weight and activity.
+     */
+    public function waterGoalMl(): int
+    {
+        return $this->daily_water_goal_ml
+            ?? WaterCalculator::recommendedGoalMl($this->gender, $this->weight_kg, $this->activity_level);
     }
 
     public function hasCompletedProfile(): bool

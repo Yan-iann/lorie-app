@@ -21,7 +21,7 @@
     <div id="nav-progress" class="nav-progress" aria-hidden="true"></div>
 
     {{-- Notifications: float over the page, then dismiss themselves (see app.js) --}}
-    <div class="pointer-events-none fixed inset-x-0 top-0 z-50 flex flex-col items-center gap-2 px-4 pt-[max(env(safe-area-inset-top),0.75rem)]">
+    <div id="toasts" class="pointer-events-none fixed inset-x-0 top-0 z-50 flex flex-col items-center gap-2 px-4 pt-[max(env(safe-area-inset-top),0.75rem)]">
         @if (session('success'))
             <x-toast>{{ session('success') }}</x-toast>
         @endif
@@ -100,10 +100,12 @@
     <x-add-food />
     @endif
 
+    <x-confirm-dialog />
+
     {{-- Loading overlay (shown during AI analysis) --}}
     <div id="loading-overlay" class="animate-fade-in fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/40 p-6 backdrop-blur-sm">
         <div class="animate-pop-in flex flex-col items-center gap-4 rounded-3xl bg-white px-10 py-8 text-center shadow-2xl">
-            <span class="size-10 animate-spin rounded-full border-4 border-slate-200 border-t-brand-500"></span>
+            <span class="size-10 animate-spin rounded-full border-4 border-slate-200 border-t-brand-600"></span>
             <p id="loading-text" class="text-sm font-semibold text-slate-700">Analyzing…</p>
             <p class="text-xs text-slate-400">This can take a few seconds.</p>
         </div>

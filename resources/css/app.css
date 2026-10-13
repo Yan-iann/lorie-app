@@ -137,6 +137,43 @@
     animation: pop-in 0.4s var(--ease-spring) both;
 }
 
+/* Confirmation dialog: pops in over a dimmed, blurred page; fades out a
+   touch faster when dismissed (app.js adds .is-closing, then closes it). */
+.confirm-dialog[open] {
+    animation: pop-in 0.35s var(--ease-spring);
+}
+
+.confirm-dialog::backdrop {
+    background-color: rgb(15 23 42 / 0.45);
+    backdrop-filter: blur(4px);
+    animation: fade-in 0.2s ease;
+}
+
+.confirm-dialog.is-closing {
+    opacity: 0;
+    transform: scale(0.96);
+    transition:
+        opacity 0.15s ease,
+        transform 0.15s ease;
+}
+
+.confirm-dialog.is-closing::backdrop {
+    opacity: 0;
+    transition: opacity 0.15s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .confirm-dialog[open],
+    .confirm-dialog::backdrop {
+        animation: none;
+    }
+
+    .confirm-dialog.is-closing,
+    .confirm-dialog.is-closing::backdrop {
+        transition: none;
+    }
+}
+
 /* Toast notifications: drop in from the top with a soft spring, then lift
    away. The entry animation only fills backwards so that, once it has played,
    the plain transition below is free to animate the exit. */
@@ -250,6 +287,42 @@
     }
 }
 
+/* Water glass. The water group sits at the brim and is pushed down by however
+   much of the goal is still to drink, so changing --level makes it rise or
+   fall; 118 is the glass's inner height in the SVG's own units. Two waves
+   drift across the surface in opposite directions, each sliding by exactly
+   one wavelength (50 units) so the loop has no seam. */
+.water-glass__water {
+    transform: translateY(calc((1 - var(--level, 0)) * 114px + 4px));
+    transition: transform 0.9s var(--ease-fluid);
+}
+
+@keyframes water-wave {
+    to {
+        transform: translateX(-50px);
+    }
+}
+
+.water-glass__wave {
+    animation: water-wave 2.4s linear infinite;
+}
+
+.water-glass__wave--back {
+    opacity: 0.7;
+    animation-duration: 3.6s;
+    animation-direction: reverse;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .water-glass__water {
+        transition: none;
+    }
+
+    .water-glass__wave {
+        animation: none;
+    }
+}
+
 /* Mascot: stands on its feet, slowly breathing and swaying. The image is one
    flat piece, so all motion pivots from the bottom edge to keep it grounded. */
 @keyframes mascot-idle {
@@ -322,7 +395,7 @@
     inset: 0 0 auto 0;
     z-index: 60;
     height: 3px;
-    background-color: var(--color-brand-500);
+    background-color: var(--color-brand-600);
     transform: scaleX(0);
     transform-origin: left;
     opacity: 0;

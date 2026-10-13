@@ -3,7 +3,7 @@
 @section('title', 'Create account · Calorie Tracker')
 
 @php
-    $fieldClass = 'w-full rounded-xl border border-slate-300 bg-slate-50/50 px-4 py-2.5 text-sm font-medium shadow-sm outline-none transition focus:border-brand-500 focus:bg-white focus:ring-4 focus:ring-brand-500/15';
+    $fieldClass = 'w-full rounded-xl border border-slate-300 bg-slate-50/50 px-4 py-2.5 text-sm font-medium shadow-sm outline-none transition focus:border-brand-600 focus:bg-white focus:ring-4 focus:ring-brand-600/15';
     $labelClass = 'mb-1.5 block text-xs font-semibold tracking-wide text-slate-400 uppercase';
     $googleEnabled = filled(config('services.google.client_id'));
 @endphp

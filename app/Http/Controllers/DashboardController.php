@@ -4,6 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Services\DailyFoodFact;
+use App\Support\LorieCoach;
+use App\Support\WaterDay;
+use App\Support\WeekSummary;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -11,7 +14,7 @@ use Illuminate\Support\Carbon;
 
 class DashboardController extends Controller
 {
-    public function index(Request $request, DailyFoodFact $foodFact): View|RedirectResponse
+    public function index(Request $request, DailyFoodFact $foodFact, LorieCoach $lorie): View|RedirectResponse
     {
         $user = $request->user();
 
@@ -42,7 +45,8 @@ class DashboardController extends Controller
         $name = $user->name;
         $greeting = $this->greeting();
         $streak = $this->loggingStreak($user);
-        $coachMessage = $this->coachMessage($entries->count(), $remaining, $percent, $name);
+        $water = WaterDay::for($user, $date);
+        $coachMessage = $lorie->message($user, $entries->count(), $remaining, $percent, $water);
 
         return view('dashboard', [
             'date' => $date,
@@ -57,6 +61,8 @@ class DashboardController extends Controller
             'coachMessage' => $coachMessage,
             'mascotName' => 'Lorie',
             'foodFact' => $foodFact->today(),
+            'water' => $water,
+            'week' => WeekSummary::for($user, $date),
         ]);
     }
 
@@ -98,15 +104,5 @@ class DashboardController extends Controller
         }
 
         return $streak;
-    }
-
-    private function coachMessage(int $count, int $remaining, int $percent, string $name): string
-    {
-        return match (true) {
-            $count === 0 => "Fresh start, {$name}! Log your first meal and I'll crunch the numbers for you.",
-            $remaining < 0 => 'Lampas na tayo by '.number_format(abs($remaining)).' kcal today — no stress, bawi tayo bukas.',
-            $percent >= 80 => "You're close to your goal — maybe keep the next bite light, ha?",
-            default => "You've got ".number_format($remaining).' kcal left today. Steady lang, you\'re pacing well!',
-        };
     }
 }

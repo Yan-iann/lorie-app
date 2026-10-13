@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\UpdateProfileRequest;
 use App\Support\CalorieCalculator;
+use App\Support\LorieCoach;
+use App\Support\WaterCalculator;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -23,7 +25,11 @@ class ProfileController extends Controller
             'weightKg' => $user->weight_kg ?? '',
             'activity' => $user->activity_level,
             'goal' => $user->daily_goal,
+            'waterGoalL' => $user->daily_water_goal_ml ? $user->daily_water_goal_ml / 1000 : '',
+            'waterSuggestionMl' => WaterCalculator::recommendedGoalMl($user->gender, $user->weight_kg, $user->activity_level),
             'activityFactors' => CalorieCalculator::ACTIVITY_FACTORS,
+            'lorieLanguage' => $user->lorie_language,
+            'lorieLanguages' => LorieCoach::LANGUAGES,
         ]);
     }
 
@@ -40,6 +46,8 @@ class ProfileController extends Controller
             'weight_kg' => $data['weight_kg'] ?? null,
             'activity_level' => $data['activity_level'] ?? 'moderate',
             'daily_goal' => $data['daily_goal'],
+            'daily_water_goal_ml' => filled($data['daily_water_goal_l'] ?? null) ? (int) round($data['daily_water_goal_l'] * 1000) : null,
+            'lorie_language' => $data['lorie_language'] ?? $user->lorie_language,
         ]);
         $user->profile_completed_at ??= now();
         $user->save();

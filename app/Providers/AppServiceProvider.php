@@ -8,6 +8,7 @@ use App\Services\Gemini\GeminiNutritionAssistant;
 use App\Services\Groq\GroqNutritionAssistant;
 use App\Services\Usda\UsdaFoodClient;
 use App\Support\DailyEntryAllowance;
+use App\Support\WaterDay;
 use Illuminate\Contracts\View\View as ViewContract;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\View;
@@ -84,14 +85,18 @@ class AppServiceProvider extends ServiceProvider
     {
         Model::shouldBeStrict(! $this->app->isProduction());
 
-        // The "Add food" popup shows how many entries the signed-in user has left today.
+        // The + popup shows how many food entries the signed-in user has left
+        // today, and their water for the day the page is showing (today when
+        // the page doesn't name one).
         View::composer('components.add-food', function (ViewContract $view) {
             $allowance = $this->app->make(DailyEntryAllowance::class);
             $user = auth()->user();
+            $date = $view->getFactory()->yieldContent('add-food-date') ?: today()->toDateString();
 
             $view->with([
                 'entryLimit' => $allowance->limit(),
                 'entriesLeft' => $user ? $allowance->remaining($user) : null,
+                'waterDay' => $user ? WaterDay::for($user, $date) : null,
             ]);
         });
     }

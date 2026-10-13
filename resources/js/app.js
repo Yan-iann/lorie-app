@@ -68,7 +68,7 @@ document.addEventListener('click', (event) => {
 
 // Form posts (save profile, sign in, remove entry…). AI forms have their own overlay.
 document.addEventListener('submit', (event) => {
-    if (event.defaultPrevented || event.target.matches('form[data-loading]')) return;
+    if (event.defaultPrevented || event.target.matches('form[data-loading], form[data-async]')) return;
 
     startPageLoading();
 });
@@ -112,23 +112,193 @@ document.addEventListener('DOMContentLoaded', () => {
 
     initAddFood();
     initToasts();
+    initConfirmDialog();
     initProfileSuggestion();
 });
 
-// Toast notifications dismiss themselves after a moment, or straight away on tap.
-function initToasts() {
-    document.querySelectorAll('[data-toast]').forEach((toast) => {
-        const dismiss = () => {
-            if (toast.classList.contains('is-leaving')) return;
-            toast.classList.add('is-leaving');
-            // Removed once the exit transition has had time to finish.
-            setTimeout(() => toast.remove(), 300);
-        };
+// Forms marked data-confirm (remove an entry, undo a drink…) ask first, in the
+// app's own dialog. Listening in the capture phase means this runs before the
+// page-loading and background-save handlers, which only see the form once the
+// user has agreed.
+function initConfirmDialog() {
+    const dialog = document.getElementById('confirm-dialog');
+    if (!dialog) return;
 
-        toast.addEventListener('click', dismiss);
-        setTimeout(dismiss, Number(toast.dataset.timeout) || 3500);
+    const supported = typeof dialog.showModal === 'function';
+    const accept = dialog.querySelector('[data-confirm-accept]');
+    let pending = null;
+
+    const close = () => {
+        dialog.classList.add('is-closing');
+        setTimeout(() => {
+            dialog.classList.remove('is-closing');
+            dialog.close();
+        }, 160);
+    };
+
+    document.addEventListener(
+        'submit',
+        (event) => {
+            const form = event.target;
+            if (!(form instanceof HTMLFormElement) || !form.hasAttribute('data-confirm')) return;
+
+            // Second time round: the user said yes, let it through.
+            if (form.dataset.confirmed) {
+                delete form.dataset.confirmed;
+                return;
+            }
+
+            const { confirmTitle = 'Are you sure?', confirmText = '', confirmAction = 'Remove', confirmIcon = 'trash' } = form.dataset;
+
+            // Very old browsers without <dialog>: fall back to the built-in prompt.
+            if (!supported) {
+                if (!window.confirm(`${confirmTitle} ${confirmText}`.trim())) event.preventDefault();
+                return;
+            }
+
+            event.preventDefault();
+            event.stopImmediatePropagation();
+
+            pending = { form, submitter: event.submitter };
+            dialog.querySelector('#confirm-title').textContent = confirmTitle;
+            dialog.querySelector('#confirm-text').textContent = confirmText;
+            accept.textContent = confirmAction;
+            dialog.querySelectorAll('[data-confirm-icon]').forEach((icon) => {
+                icon.classList.toggle('hidden', icon.dataset.confirmIcon !== confirmIcon);
+            });
+
+            dialog.showModal();
+        },
+        true,
+    );
+
+    accept.addEventListener('click', () => {
+        if (!pending) return;
+        const { form, submitter } = pending;
+        pending = null;
+        close();
+
+        if (!form.isConnected) return;
+        form.dataset.confirmed = '1';
+        form.requestSubmit(submitter?.form === form ? submitter : undefined);
+    });
+
+    dialog.querySelector('[data-confirm-cancel]').addEventListener('click', close);
+    // Escape, and a tap on the dimmed area outside the box, both cancel.
+    dialog.addEventListener('cancel', (event) => {
+        event.preventDefault();
+        close();
+    });
+    dialog.addEventListener('click', (event) => {
+        if (event.target === dialog) close();
+    });
+    dialog.addEventListener('close', () => {
+        pending = null;
     });
 }
+
+// Toast notifications dismiss themselves after a moment, or straight away on tap.
+function armToast(toast) {
+    const dismiss = () => {
+        if (toast.classList.contains('is-leaving')) return;
+        toast.classList.add('is-leaving');
+        // Removed once the exit transition has had time to finish.
+        setTimeout(() => toast.remove(), 300);
+    };
+
+    toast.addEventListener('click', dismiss);
+    setTimeout(dismiss, Number(toast.dataset.timeout) || 3500);
+}
+
+function initToasts() {
+    document.querySelectorAll('[data-toast]').forEach(armToast);
+}
+
+// Show a toast the server sent back as HTML, replacing any still on screen.
+function showToast(html) {
+    const stack = document.getElementById('toasts');
+    if (!stack || !html) return;
+
+    stack.querySelectorAll('[data-toast]').forEach((toast) => toast.remove());
+    stack.insertAdjacentHTML('beforeend', html);
+    stack.querySelectorAll('[data-toast]').forEach(armToast);
+}
+
+// Water (and anything else marked data-async) saves in the background: no page
+// reload. The server sends back the redrawn water parts of the dashboard (the
+// gauge and the controls); each replaces the one on the page with the same
+// data-water-part name, and the glass glides from its old level to the new one.
+function swapWaterParts(html) {
+    if (!html) return;
+
+    const template = document.createElement('template');
+    template.innerHTML = html.trim();
+
+    template.content.querySelectorAll('[data-water-part]').forEach((fresh) => {
+        const current = document.querySelector(`[data-water-part="${fresh.dataset.waterPart}"]`);
+        if (!current) return;
+
+        // Keep the list of drinks open if it was.
+        const details = fresh.querySelector('details');
+        if (details && current.querySelector('details')?.open) details.open = true;
+
+        // Start the new glass at the old level, then let it settle to the new one.
+        const glass = fresh.querySelector('.water-glass');
+        const target = fresh.dataset.level;
+        glass?.style.setProperty('--level', current.dataset.level || '0');
+
+        current.replaceWith(fresh);
+
+        if (glass) {
+            void glass.getBoundingClientRect(); // commit the starting level
+            glass.style.setProperty('--level', target);
+        }
+    });
+}
+
+document.addEventListener('submit', async (event) => {
+    const form = event.target;
+    if (!(form instanceof HTMLFormElement) || !form.matches('form[data-async]') || event.defaultPrevented) return;
+
+    event.preventDefault();
+
+    const data = new FormData(form);
+    // The tapped button says which container it was.
+    if (event.submitter?.name) data.set(event.submitter.name, event.submitter.value);
+
+    const buttons = form.querySelectorAll('button');
+    buttons.forEach((button) => (button.disabled = true));
+
+    try {
+        const response = await fetch(form.action, {
+            method: 'POST',
+            headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+            body: data,
+        });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+        const result = await response.json();
+        swapWaterParts(result.parts);
+        // Lorie's bubble mentions water too; keep it in step when the gauge is on this page.
+        const coach = document.querySelector('[data-coach-message]');
+        if (coach && result.coach && document.querySelector('[data-water-part]')) coach.textContent = result.coach;
+        showToast(result.toast);
+        document.dispatchEvent(new CustomEvent('add-food:close'));
+    } catch {
+        // Couldn't save in the background (offline, expired session…): fall
+        // back to a normal form post, which reports the problem properly.
+        if (event.submitter?.name) {
+            const field = document.createElement('input');
+            field.type = 'hidden';
+            field.name = event.submitter.name;
+            field.value = event.submitter.value;
+            form.append(field);
+        }
+        form.submit();
+    } finally {
+        buttons.forEach((button) => (button.disabled = false));
+    }
+});
 
 // "Add food" popup behind the + button: a short menu (type it / take a photo),
 // then the text form if the user chose to type.
@@ -162,9 +332,9 @@ function initAddFood() {
     };
 
     const focusFirst = () => {
-        const typeView = panel.querySelector('[data-add-food-view="type"]');
-        const typing = typeView && !typeView.classList.contains('hidden');
-        const first = typing ? panel.querySelector('input[name="description"]') : panel.querySelector('[data-add-food-show="type"]');
+        // The text box when typing; otherwise the first thing that can be pressed.
+        const view = [...views].find((candidate) => !candidate.classList.contains('hidden'));
+        const first = view?.querySelector('input[name="description"]') ?? view?.querySelector('button, label[for]');
         first?.focus({ preventScroll: true });
     };
 
@@ -180,10 +350,17 @@ function initAddFood() {
     };
 
     toggles.forEach((toggle) => toggle.addEventListener('click', () => setOpen(!isOpen())));
+    // Shortcuts straight to one view, e.g. tapping the water glass. Listened for
+    // on the document because the glass is replaced whenever water is logged.
+    document.addEventListener('click', (event) => {
+        const opener = event.target.closest?.('[data-add-food-open]');
+        if (opener) setOpen(true, opener.dataset.addFoodOpen);
+    });
     panel.querySelectorAll('[data-add-food-show]').forEach((button) => {
         button.addEventListener('click', () => show(button.dataset.addFoodShow));
     });
     backdrop.addEventListener('click', () => setOpen(false));
+    document.addEventListener('add-food:close', () => isOpen() && setOpen(false));
     document.addEventListener('keydown', (event) => {
         if (event.key === 'Escape' && isOpen()) setOpen(false);
     });
@@ -223,10 +400,29 @@ function initProfileSuggestion() {
     // Track the goal automatically until the user edits it by hand.
     let goalTouched = Boolean(goalInput && goalInput.value !== '');
 
+    // Water: the same sum the server does (WaterCalculator), using its numbers
+    // passed down on the form so the two can't drift apart.
+    const water = form.dataset;
+    const waterExtra = JSON.parse(water.waterActivityExtra || '{}');
+    const waterDefaults = JSON.parse(water.waterDefaults || '{}');
+
+    const suggestWaterMl = () => {
+        const weight = parseFloat(el('weight_kg')?.value);
+        if (!(weight > 0)) return waterDefaults[el('gender')?.value] ?? waterDefaults.other;
+
+        const extra = waterExtra[el('activity_level')?.value] ?? waterExtra.moderate;
+        const goal = Math.round((weight * Number(water.waterMlPerKg) + extra) / 100) * 100;
+        return Math.max(Number(water.waterMin), Math.min(Number(water.waterMax), goal));
+    };
+
     const render = () => {
         const goal = suggest();
         if (suggestionEl) suggestionEl.textContent = goal.toLocaleString();
         if (goalInput && !goalTouched) goalInput.value = goal;
+
+        const litres = suggestWaterMl() / 1000;
+        if (el('water-suggestion')) el('water-suggestion').textContent = `${litres} L`;
+        if (el('daily_water_goal_l')) el('daily_water_goal_l').placeholder = litres;
     };
 
     ['gender', 'height_cm', 'weight_kg', 'activity_level'].forEach((id) => {
