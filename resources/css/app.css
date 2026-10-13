@@ -130,6 +130,39 @@
     animation: pop-in 0.4s var(--ease-spring) both;
 }
 
+/* Toast notifications: drop in from the top with a soft spring, then lift
+   away. The entry animation only fills backwards so that, once it has played,
+   the plain transition below is free to animate the exit. */
+@keyframes toast-in {
+    from {
+        opacity: 0;
+        transform: translateY(-140%) scale(0.96);
+    }
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+.toast {
+    animation: toast-in 0.5s var(--ease-spring) backwards;
+    transition:
+        opacity 0.25s ease,
+        transform 0.25s cubic-bezier(0.4, 0, 1, 1);
+}
+
+.toast.is-leaving {
+    opacity: 0;
+    transform: translateY(-24px) scale(0.96);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .toast {
+        animation: none;
+        transition: none;
+    }
+}
+
 /* "Add food" popup: grows out of the + button and settles with a soft spring;
    on the way out it simply drops back, a little faster. Kept in the layout
    while closed (invisible) so both directions can animate. */

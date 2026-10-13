@@ -111,8 +111,24 @@ document.addEventListener('DOMContentLoaded', () => {
     window.scrollTo(0, 0);
 
     initAddFood();
+    initToasts();
     initProfileSuggestion();
 });
+
+// Toast notifications dismiss themselves after a moment, or straight away on tap.
+function initToasts() {
+    document.querySelectorAll('[data-toast]').forEach((toast) => {
+        const dismiss = () => {
+            if (toast.classList.contains('is-leaving')) return;
+            toast.classList.add('is-leaving');
+            // Removed once the exit transition has had time to finish.
+            setTimeout(() => toast.remove(), 300);
+        };
+
+        toast.addEventListener('click', dismiss);
+        setTimeout(dismiss, Number(toast.dataset.timeout) || 3500);
+    });
+}
 
 // "Add food" popup behind the + button: a short menu (type it / take a photo),
 // then the text form if the user chose to type.

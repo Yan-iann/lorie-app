@@ -18,41 +18,35 @@
     {{-- Progress bar shown while navigating to another page --}}
     <div id="nav-progress" class="nav-progress" aria-hidden="true"></div>
 
+    {{-- Notifications: float over the page, then dismiss themselves (see app.js) --}}
+    <div class="pointer-events-none fixed inset-x-0 top-0 z-50 flex flex-col items-center gap-2 px-4 pt-[max(env(safe-area-inset-top),0.75rem)]">
+        @if (session('success'))
+            <x-toast>{{ session('success') }}</x-toast>
+        @endif
+
+        @if (session('error'))
+            <x-toast type="error">{{ session('error') }}</x-toast>
+        @endif
+
+        @if ($errors->any())
+            <x-toast type="error">
+                @if ($errors->count() === 1)
+                    {{ $errors->first() }}
+                @else
+                    <ul class="list-inside list-disc space-y-0.5">
+                        @foreach ($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                @endif
+            </x-toast>
+        @endif
+    </div>
+
     <div class="flex min-h-full flex-col pb-24 sm:pb-0">
         <main class="mx-auto w-full max-w-3xl flex-1 px-4 py-6 sm:px-6 sm:py-8">
             {{-- Everything in here is swapped for the skeleton while the next page loads --}}
             <div id="page-content">
-                @if (session('success'))
-                    <div class="animate-rise mb-6 flex items-center gap-3 rounded-2xl border border-brand-200 bg-brand-50/80 px-4 py-3 text-sm font-medium text-brand-800 shadow-sm">
-                        <span class="grid size-6 shrink-0 place-items-center rounded-full bg-brand-500 text-white">
-                            <x-icon name="check" class="size-3.5" />
-                        </span>
-                        {{ session('success') }}
-                    </div>
-                @endif
-
-                @if (session('error'))
-                    <div class="animate-rise mb-6 flex items-center gap-3 rounded-2xl border border-rose-200 bg-rose-50/80 px-4 py-3 text-sm font-medium text-rose-800 shadow-sm">
-                        <span class="grid size-6 shrink-0 place-items-center rounded-full bg-rose-500 text-white">
-                            <x-icon name="alert" class="size-3.5" />
-                        </span>
-                        {{ session('error') }}
-                    </div>
-                @endif
-
-                @if ($errors->any())
-                    <div class="animate-rise mb-6 flex items-start gap-3 rounded-2xl border border-rose-200 bg-rose-50/80 px-4 py-3 text-sm text-rose-800 shadow-sm">
-                        <span class="mt-0.5 grid size-6 shrink-0 place-items-center rounded-full bg-rose-500 text-white">
-                            <x-icon name="alert" class="size-3.5" />
-                        </span>
-                        <ul class="list-inside list-disc space-y-0.5">
-                            @foreach ($errors->all() as $error)
-                                <li>{{ $error }}</li>
-                            @endforeach
-                        </ul>
-                    </div>
-                @endif
-
                 @yield('content')
             </div>
 
