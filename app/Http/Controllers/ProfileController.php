@@ -28,6 +28,8 @@ class ProfileController extends Controller
             'waterGoalL' => $user->daily_water_goal_ml ? $user->daily_water_goal_ml / 1000 : '',
             'waterSuggestionMl' => WaterCalculator::recommendedGoalMl($user->gender, $user->weight_kg, $user->activity_level),
             'activityFactors' => CalorieCalculator::ACTIVITY_FACTORS,
+            'waterStartsAt' => $user->water_starts_at,
+            'waterEndsAt' => $user->water_ends_at,
             'lorieLanguage' => $user->lorie_language,
             'lorieLanguages' => LorieCoach::LANGUAGES,
         ]);
@@ -47,6 +49,8 @@ class ProfileController extends Controller
             'activity_level' => $data['activity_level'] ?? 'moderate',
             'daily_goal' => $data['daily_goal'],
             'daily_water_goal_ml' => filled($data['daily_water_goal_l'] ?? null) ? (int) round($data['daily_water_goal_l'] * 1000) : null,
+            'water_starts_at' => $data['water_starts_at'] ?? $user->water_starts_at,
+            'water_ends_at' => $data['water_ends_at'] ?? $user->water_ends_at,
             'lorie_language' => $data['lorie_language'] ?? $user->lorie_language,
         ]);
         $user->profile_completed_at ??= now();

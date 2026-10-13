@@ -13,20 +13,37 @@ class WaterDay
 {
     /**
      * @param  Collection<int, WaterLog>  $logs  newest first
+     * @param  WaterSchedule|null  $schedule  when to drink next; only today has one
      */
     public function __construct(
         public readonly string $date,
         public readonly Collection $logs,
         public readonly int $goalMl,
+        public readonly ?WaterSchedule $schedule = null,
     ) {}
 
     public static function for(User $user, string $date): self
     {
+        $logs = $user->waterLogs()->forDate($date)->latest('id')->get();
+        $goalMl = $user->waterGoalMl();
+
         return new self(
             date: $date,
-            logs: $user->waterLogs()->forDate($date)->latest('id')->get(),
-            goalMl: $user->waterGoalMl(),
+            logs: $logs,
+            goalMl: $goalMl,
+            schedule: $date === today()->toDateString()
+                ? WaterSchedule::for($user, $goalMl, (int) $logs->sum('amount_ml'))
+                : null,
         );
+    }
+
+    /**
+     * The drink size to plan the rest of the day around: whatever was used
+     * last today, or a medium cup before anything has been logged.
+     */
+    public function usualDrinkMl(): int
+    {
+        return $this->logs->first()?->amount_ml ?? WaterCalculator::CONTAINERS['medium-cup']['ml'];
     }
 
     public function totalMl(): int

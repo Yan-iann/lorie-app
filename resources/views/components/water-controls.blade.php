@@ -4,6 +4,11 @@
     use App\Support\WaterCalculator;
 
     $drinks = $day->logs->count();
+
+    // The rest of today as times, if every drink were the size used last
+    // (or just what's left, when that is less than one such drink).
+    $planMl = min($day->usualDrinkMl(), max(1, $day->remainingMl()));
+    $plan = $day->schedule?->plan($planMl, 8) ?? [];
 @endphp
 
 {{--
@@ -13,7 +18,23 @@
     (data-water-part).
 --}}
 <div data-water-part="controls">
-    <x-water-containers :date="$day->date" />
+    <x-water-containers :date="$day->date" :schedule="$day->schedule" />
+
+    @if ($plan !== [])
+        <div class="mt-3 rounded-xl bg-sky-50 px-3 py-2.5">
+            <p class="text-[11px] font-semibold text-sky-800">
+                To finish today with {{ WaterCalculator::format($planMl) }} drinks
+                <span class="font-medium text-sky-700/70">· the time under each cup is how long it covers</span>
+            </p>
+            <ul class="mt-1.5 flex flex-wrap gap-1.5">
+                @foreach ($plan as $index => $time)
+                    <li class="rounded-full px-2 py-1 text-[11px] leading-none font-semibold tabular-nums {{ $index === 0 ? 'bg-sky-500 text-white' : 'bg-white text-sky-700' }}">
+                        {{ $index === 0 && $time->lte($day->schedule->now) ? 'Now' : $time->format('g:i A') }}
+                    </li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
 
     @if ($drinks > 0)
         <div class="mt-4 border-t border-slate-100 pt-3">

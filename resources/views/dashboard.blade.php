@@ -140,6 +140,9 @@
             </div>
         </div>
 
+        {{-- When to drink next (today only) --}}
+        <x-water-schedule :day="$water" />
+
         {{-- Macros --}}
         <div class="mt-5 border-t border-slate-100 pt-5">
             <div class="mb-2.5 flex h-2 w-full overflow-hidden rounded-full bg-slate-100">

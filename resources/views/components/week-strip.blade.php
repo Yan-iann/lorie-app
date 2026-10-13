@@ -11,8 +11,11 @@
     sections. Each day has two bars — calories (green) and water (blue) — each
     drawn as a share of its own goal, so one green goal line serves both. A
     dot marks each day food was logged. Each day links to itself.
+
+    Redrawn by the server whenever water is logged and swapped in by app.js
+    (data-water-part), so the blue bars keep up without a page reload.
 --}}
-<section class="animate-rise mb-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+<section data-water-part="week" class="animate-rise mb-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
     <div class="flex items-baseline justify-between gap-3">
         <h2 class="text-base font-bold text-slate-900">This week</h2>
         <p class="text-xs font-medium text-slate-400">

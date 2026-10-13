@@ -6,6 +6,14 @@
     $hasMascot = file_exists(public_path('images/mascot.png'));
     $fieldClass = 'w-full rounded-xl border border-slate-300 bg-slate-50/50 px-4 py-2.5 text-sm font-medium shadow-sm outline-none transition focus:border-brand-600 focus:bg-white focus:ring-4 focus:ring-brand-600/15';
     $labelClass = 'mb-1.5 block text-xs font-semibold tracking-wide text-slate-400 uppercase';
+
+    $activityLabels = [
+        'sedentary' => 'Sedentary: little or no exercise',
+        'light' => 'Light: 1 to 3 days/week',
+        'moderate' => 'Moderate: 3 to 5 days/week',
+        'active' => 'Active: 6 to 7 days/week',
+        'athlete' => 'Athlete: hard daily training',
+    ];
 @endphp
 
 @section('content')
@@ -37,114 +45,125 @@
         </div>
     @endif
 
+    {{-- One form, saved with one button, laid out as a card per topic --}}
     <form id="profile-form" method="POST" action="{{ route('profile.update') }}"
           data-water-ml-per-kg="{{ \App\Support\WaterCalculator::ML_PER_KG }}"
           data-water-activity-extra='@json(\App\Support\WaterCalculator::ACTIVITY_EXTRA_ML)'
           data-water-defaults='@json(\App\Support\WaterCalculator::DEFAULT_GOAL_ML)'
           data-water-min="{{ \App\Support\WaterCalculator::MIN_GOAL_ML }}" data-water-max="{{ \App\Support\WaterCalculator::MAX_GOAL_ML }}"
-          class="animate-rise space-y-5 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          class="animate-rise flex flex-col gap-5">
         @csrf
         @method('PUT')
 
-        {{-- Name --}}
-        <div>
-            <label for="display_name" class="{{ $labelClass }}">Your name</label>
-            <input id="display_name" type="text" name="display_name" value="{{ old('display_name', $name) }}" maxlength="30" placeholder="What should I call you?" required class="{{ $fieldClass }}">
-        </div>
-
-        {{-- Gender --}}
-        <div>
-            <label for="gender" class="{{ $labelClass }}">Gender</label>
-            <select id="gender" name="gender" required class="{{ $fieldClass }}">
-                <option value="" disabled @selected(old('gender', $gender) === '')>Select…</option>
-                <option value="male" @selected(old('gender', $gender) === 'male')>Male</option>
-                <option value="female" @selected(old('gender', $gender) === 'female')>Female</option>
-                <option value="other" @selected(old('gender', $gender) === 'other')>Rather not say</option>
-            </select>
-        </div>
-
-        {{-- Height / Weight --}}
-        <div class="grid grid-cols-2 gap-3">
+        {{-- About you --}}
+        <x-form-section title="About you" icon="user" description="Used to work out your suggested calorie and water goals.">
             <div>
-                <label for="height_cm" class="{{ $labelClass }}">Height</label>
-                <div class="relative">
-                    <input id="height_cm" type="number" name="height_cm" value="{{ old('height_cm', $heightCm) }}" min="50" max="260" step="0.1" placeholder="—" class="{{ $fieldClass }} pr-9">
-                    <span class="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-xs text-slate-400">cm</span>
+                <label for="display_name" class="{{ $labelClass }}">Your name</label>
+                <input id="display_name" type="text" name="display_name" value="{{ old('display_name', $name) }}" maxlength="30" placeholder="What should I call you?" required class="{{ $fieldClass }}">
+            </div>
+
+            <div>
+                <label for="gender" class="{{ $labelClass }}">Gender</label>
+                <select id="gender" name="gender" required class="{{ $fieldClass }}">
+                    <option value="" disabled @selected(old('gender', $gender) === '')>Select…</option>
+                    <option value="male" @selected(old('gender', $gender) === 'male')>Male</option>
+                    <option value="female" @selected(old('gender', $gender) === 'female')>Female</option>
+                    <option value="other" @selected(old('gender', $gender) === 'other')>Rather not say</option>
+                </select>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label for="height_cm" class="{{ $labelClass }}">Height</label>
+                    <div class="relative">
+                        <input id="height_cm" type="number" name="height_cm" value="{{ old('height_cm', $heightCm) }}" min="50" max="260" step="0.1" placeholder="—" class="{{ $fieldClass }} pr-9">
+                        <span class="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-xs text-slate-400">cm</span>
+                    </div>
+                </div>
+                <div>
+                    <label for="weight_kg" class="{{ $labelClass }}">Weight</label>
+                    <div class="relative">
+                        <input id="weight_kg" type="number" name="weight_kg" value="{{ old('weight_kg', $weightKg) }}" min="20" max="400" step="0.1" placeholder="—" class="{{ $fieldClass }} pr-9">
+                        <span class="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-xs text-slate-400">kg</span>
+                    </div>
                 </div>
             </div>
+
             <div>
-                <label for="weight_kg" class="{{ $labelClass }}">Weight</label>
+                <label for="activity_level" class="{{ $labelClass }}">Activity level</label>
+                <select id="activity_level" name="activity_level" class="{{ $fieldClass }}">
+                    @foreach ($activityLabels as $value => $label)
+                        <option value="{{ $value }}" @selected(old('activity_level', $activity) === $value)>{{ $label }}</option>
+                    @endforeach
+                </select>
+            </div>
+        </x-form-section>
+
+        {{-- Calories --}}
+        <x-form-section title="Calories" icon="flame" description="How much you aim to eat each day.">
+            <div class="flex items-center justify-between gap-3 rounded-2xl bg-brand-50 px-4 py-3">
+                <div>
+                    <p class="text-xs font-semibold tracking-wide text-brand-700 uppercase">Suggested daily goal</p>
+                    <p class="text-lg font-bold text-brand-700"><span id="goal-suggestion">—</span> <span class="text-sm font-medium text-brand-600/70">kcal</span></p>
+                </div>
+                <button type="button" id="use-suggestion" class="cursor-pointer rounded-xl bg-white px-3 py-2 text-xs font-semibold text-brand-700 shadow-sm ring-1 ring-brand-200 transition hover:bg-brand-100 active:scale-95">
+                    Use this
+                </button>
+            </div>
+
+            <div>
+                <label for="daily_goal" class="{{ $labelClass }}">Daily calorie goal</label>
                 <div class="relative">
-                    <input id="weight_kg" type="number" name="weight_kg" value="{{ old('weight_kg', $weightKg) }}" min="20" max="400" step="0.1" placeholder="—" class="{{ $fieldClass }} pr-9">
-                    <span class="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-xs text-slate-400">kg</span>
+                    <input id="daily_goal" type="number" name="daily_goal" value="{{ old('daily_goal', $onboarding ? '' : $goal) }}" min="500" max="10000" step="10" required class="{{ $fieldClass }} pr-14">
+                    <span class="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-xs text-slate-400">kcal</span>
                 </div>
             </div>
-        </div>
+        </x-form-section>
 
-        {{-- Activity level --}}
-        <div>
-            <label for="activity_level" class="{{ $labelClass }}">Activity level</label>
-            <select id="activity_level" name="activity_level" class="{{ $fieldClass }}">
-                @php
-                    $activityLabels = [
-                        'sedentary' => 'Sedentary: little or no exercise',
-                        'light' => 'Light: 1 to 3 days/week',
-                        'moderate' => 'Moderate: 3 to 5 days/week',
-                        'active' => 'Active: 6 to 7 days/week',
-                        'athlete' => 'Athlete: hard daily training',
-                    ];
-                @endphp
-                @foreach ($activityLabels as $value => $label)
-                    <option value="{{ $value }}" @selected(old('activity_level', $activity) === $value)>{{ $label }}</option>
-                @endforeach
-            </select>
-        </div>
-
-        {{-- Suggested goal --}}
-        <div class="flex items-center justify-between gap-3 rounded-2xl bg-brand-50 px-4 py-3">
+        {{-- Water --}}
+        <x-form-section title="Water" icon="drop" variant="outline" description="How much to drink, and the hours to spread it over.">
             <div>
-                <p class="text-xs font-semibold tracking-wide text-brand-700 uppercase">Suggested daily goal</p>
-                <p class="text-lg font-bold text-brand-700"><span id="goal-suggestion">—</span> <span class="text-sm font-medium text-brand-600/70">kcal</span></p>
+                <label for="daily_water_goal_l" class="{{ $labelClass }}">Daily water goal</label>
+                <div class="relative">
+                    <input id="daily_water_goal_l" type="number" name="daily_water_goal_l" value="{{ old('daily_water_goal_l', $waterGoalL) }}" min="0.5" max="10" step="0.1"
+                           placeholder="{{ $waterSuggestionMl / 1000 }}" class="{{ $fieldClass }} pr-9">
+                    <span class="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-xs text-slate-400">L</span>
+                </div>
+                <p class="mt-1.5 text-xs text-slate-400">
+                    Leave blank to use the suggested <span id="water-suggestion" class="font-semibold text-sky-600">{{ $waterSuggestionMl / 1000 }} L</span>, worked out from your weight and activity.
+                </p>
             </div>
-            <button type="button" id="use-suggestion" class="rounded-xl bg-white px-3 py-2 text-xs font-semibold text-brand-700 shadow-sm ring-1 ring-brand-200 transition hover:bg-brand-100 active:scale-95">
-                Use this
-            </button>
-        </div>
 
-        {{-- Daily goal --}}
-        <div>
-            <label for="daily_goal" class="{{ $labelClass }}">Daily calorie goal</label>
-            <div class="relative">
-                <input id="daily_goal" type="number" name="daily_goal" value="{{ old('daily_goal', $onboarding ? '' : $goal) }}" min="500" max="10000" step="10" required class="{{ $fieldClass }} pr-14">
-                <span class="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-xs text-slate-400">kcal</span>
+            <div>
+                <p class="{{ $labelClass }}">Water hours</p>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label for="water_starts_at" class="mb-1 block text-xs font-medium text-slate-500">First drink from</label>
+                        <input id="water_starts_at" type="time" name="water_starts_at" value="{{ old('water_starts_at', $waterStartsAt) }}" class="{{ $fieldClass }}">
+                    </div>
+                    <div>
+                        <label for="water_ends_at" class="mb-1 block text-xs font-medium text-slate-500">Last drink by</label>
+                        <input id="water_ends_at" type="time" name="water_ends_at" value="{{ old('water_ends_at', $waterEndsAt) }}" class="{{ $fieldClass }}">
+                    </div>
+                </div>
+                <p class="mt-1.5 text-xs text-slate-400">Your water goal is paced across these hours, and the app tells you when the next drink is due.</p>
             </div>
-        </div>
+        </x-form-section>
 
-        {{-- Daily water goal --}}
-        <div>
-            <label for="daily_water_goal_l" class="{{ $labelClass }}">Daily water goal</label>
-            <div class="relative">
-                <input id="daily_water_goal_l" type="number" name="daily_water_goal_l" value="{{ old('daily_water_goal_l', $waterGoalL) }}" min="0.5" max="10" step="0.1"
-                       placeholder="{{ $waterSuggestionMl / 1000 }}" class="{{ $fieldClass }} pr-9">
-                <span class="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-xs text-slate-400">L</span>
+        {{-- Lorie --}}
+        <x-form-section title="Lorie" icon="chat" description="How your coach talks to you.">
+            <div>
+                <label for="lorie_language" class="{{ $labelClass }}">Lorie speaks in</label>
+                <select id="lorie_language" name="lorie_language" class="{{ $fieldClass }}">
+                    @foreach ($lorieLanguages as $value => $label)
+                        <option value="{{ $value }}" @selected(old('lorie_language', $lorieLanguage) === $value)>{{ $label }}</option>
+                    @endforeach
+                </select>
+                <p class="mt-1.5 text-xs text-slate-400">The language of Lorie's messages on your dashboard.</p>
             </div>
-            <p class="mt-1.5 text-xs text-slate-400">
-                Leave blank to use the suggested <span id="water-suggestion" class="font-semibold text-sky-600">{{ $waterSuggestionMl / 1000 }} L</span>, worked out from your weight and activity.
-            </p>
-        </div>
+        </x-form-section>
 
-        {{-- Lorie's language --}}
-        <div>
-            <label for="lorie_language" class="{{ $labelClass }}">Lorie speaks in</label>
-            <select id="lorie_language" name="lorie_language" class="{{ $fieldClass }}">
-                @foreach ($lorieLanguages as $value => $label)
-                    <option value="{{ $value }}" @selected(old('lorie_language', $lorieLanguage) === $value)>{{ $label }}</option>
-                @endforeach
-            </select>
-            <p class="mt-1.5 text-xs text-slate-400">The language of Lorie's messages on your dashboard.</p>
-        </div>
-
-        <div class="flex items-center gap-3 pt-1">
+        <div class="flex items-center gap-3">
             <button type="submit" class="flex-1 cursor-pointer rounded-xl bg-brand-600 px-6 py-3 text-sm font-semibold text-white transition hover:bg-brand-700 active:scale-95">
                 {{ $onboarding ? 'Get started' : 'Save profile' }}
             </button>
@@ -162,7 +181,7 @@
         </div>
         <form method="POST" action="{{ route('logout') }}" class="shrink-0">
             @csrf
-            <button type="submit" class="shrink-0 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold whitespace-nowrap text-slate-600 shadow-sm transition hover:text-rose-600 active:scale-95">
+            <button type="submit" class="shrink-0 cursor-pointer rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold whitespace-nowrap text-slate-600 shadow-sm transition hover:text-rose-600 active:scale-95">
                 Log out
             </button>
         </form>

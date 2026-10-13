@@ -238,6 +238,9 @@ function swapWaterParts(html) {
         const current = document.querySelector(`[data-water-part="${fresh.dataset.waterPart}"]`);
         if (!current) return;
 
+        // It's a redraw, not a new arrival: skip the entrance animation.
+        fresh.classList.remove('animate-rise');
+
         // Keep the list of drinks open if it was.
         const details = fresh.querySelector('details');
         if (details && current.querySelector('details')?.open) details.open = true;

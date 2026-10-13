@@ -7,6 +7,7 @@ use App\Models\WaterLog;
 use App\Support\LorieCoach;
 use App\Support\WaterCalculator;
 use App\Support\WaterDay;
+use App\Support\WeekSummary;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -60,7 +61,10 @@ class WaterLogController extends Controller
     {
         if ($request->expectsJson()) {
             return response()->json([
-                'parts' => Blade::render('<x-water-gauge :day="$day" /><x-water-controls :day="$day" />', ['day' => $day]),
+                'parts' => Blade::render(
+                    '<x-water-gauge :day="$day" /><x-water-schedule :day="$day" /><x-water-controls :day="$day" /><x-week-strip :week="$week" />',
+                    ['day' => $day, 'week' => WeekSummary::for($request->user(), $day->date)],
+                ),
                 'toast' => Blade::render('<x-toast>{{ $message }}</x-toast>', ['message' => $message]),
                 'coach' => $this->lorie->messageForDay($request->user(), $day),
             ]);

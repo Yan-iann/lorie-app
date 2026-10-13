@@ -83,6 +83,9 @@ class WaterTrackingTest extends TestCase
         $this->assertStringContainsString('1.8 L pa ng water to go', $response->json('coach'));
         $this->assertStringContainsString('data-water-part="gauge"', $response->json('parts'));
         $this->assertStringContainsString('data-water-part="controls"', $response->json('parts'));
+        // The weekly chart comes back too, already showing the new drink.
+        $this->assertStringContainsString('data-water-part="week"', $response->json('parts'));
+        $this->assertStringContainsString('no food logged, 1 L water', $response->json('parts'));
         $this->assertStringContainsString('1 L', $response->json('parts'));
         $this->assertStringContainsString('Added 1 L of water.', $response->json('toast'));
     }

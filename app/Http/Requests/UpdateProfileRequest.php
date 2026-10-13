@@ -28,7 +28,20 @@ class UpdateProfileRequest extends FormRequest
             'daily_goal' => ['required', 'integer', 'min:500', 'max:10000'],
             // In litres. Blank means "use the suggested amount".
             'daily_water_goal_l' => ['nullable', 'numeric', 'min:0.5', 'max:10'],
+            // The hours the day's water is paced across.
+            'water_starts_at' => ['nullable', 'date_format:H:i'],
+            'water_ends_at' => ['nullable', 'date_format:H:i', 'after:water_starts_at'],
             'lorie_language' => ['nullable', Rule::in(array_keys(LorieCoach::LANGUAGES))],
+        ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return [
+            'water_ends_at.after' => 'Your last drink time needs to be later than your first.',
         ];
     }
 }
