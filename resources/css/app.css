@@ -4,7 +4,7 @@
 @source '../../storage/framework/views/*.php';
 
 @theme {
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+    --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
 
     /* Brand palette (emerald/teal) */
@@ -28,6 +28,13 @@
 }
 
 @layer base {
+    /* Everything in the app is sized in rem, so this one value scales all text
+       (and spacing with it) down a touch: 15px where the browser default is
+       16px. A percentage, so a user's own larger-text setting still applies. */
+    html {
+        font-size: 93.75%;
+    }
+
     body {
         background-color: #f4f6f5;
     }

@@ -12,6 +12,8 @@
     <link rel="apple-touch-icon" href="{{ asset('images/icon.png') }}">
     <meta name="theme-color" content="#1f8a52">
 
+    {{-- Self-hosted web font (preloads + @font-face), then the app's CSS and JS --}}
+    @fonts
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="h-full text-slate-800 antialiased">

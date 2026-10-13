@@ -77,7 +77,7 @@
 
         <input id="food-description" type="text" name="description" value="{{ old('description') }}" required
                placeholder="e.g. chicken adobo with rice" autocomplete="off"
-               class="w-full rounded-xl border border-slate-300 bg-slate-50/50 px-4 py-3 text-base shadow-sm outline-none transition focus:border-brand-500 focus:bg-white focus:ring-4 focus:ring-brand-500/15 sm:text-sm">
+               class="w-full rounded-xl border border-slate-300 bg-slate-50/50 px-4 py-3 text-[16px] shadow-sm outline-none transition focus:border-brand-500 focus:bg-white focus:ring-4 focus:ring-brand-500/15 sm:text-sm">
 
         <button type="submit"
                 class="block w-full cursor-pointer rounded-xl bg-brand-600 px-6 py-3 text-sm font-semibold text-white transition hover:bg-brand-700 active:scale-95 focus:ring-4 focus:ring-brand-600/20">
