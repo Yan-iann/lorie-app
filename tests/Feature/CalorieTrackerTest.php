@@ -284,6 +284,45 @@ class CalorieTrackerTest extends TestCase
         ]);
     }
 
+    public function test_an_unhealthy_primary_is_skipped_for_a_few_minutes(): void
+    {
+        config()->set('services.ai.provider', 'gemini');
+        config()->set('services.ai.fallback', 'groq');
+        config()->set('services.gemini.key', 'gemini-test-key');
+        config()->set('services.gemini.model', 'gemini-3.5-flash');
+        config()->set('services.gemini.vision_model', 'gemini-3.5-flash');
+
+        Http::fake([
+            // Gemini is down (not over quota): every attempt gets a 503.
+            'generativelanguage.googleapis.com/*' => Http::response('overloaded', 503),
+            'api.groq.com/*' => Http::sequence()
+                ->push($this->ai([
+                    'dish_name' => 'Apple',
+                    'ingredients' => [
+                        ['name' => 'Apple', 'usda_query' => 'apple raw', 'grams' => 100, 'est_calories' => 52, 'est_protein_g' => 0.3, 'est_carbs_g' => 14, 'est_fat_g' => 0.2],
+                    ],
+                ]))
+                ->push($this->ai(['confidence' => 'high', 'reasonable' => true, 'note' => 'Looks right.'])),
+            'api.nal.usda.gov/*' => Http::response($this->usda([208 => 52], 'Apple, raw')),
+        ]);
+
+        $this->post(route('entries.store'), ['description' => 'an apple'])->assertSessionMissing('error');
+
+        $this->assertDatabaseHas('food_entries', ['name' => 'Apple', 'confidence' => 'high']);
+
+        // Gemini was tried for the first step only (twice, with its one retry).
+        // The second step went straight to Groq instead of waiting on Gemini again.
+        $geminiRequests = Http::recorded(fn ($request) => str_contains($request->url(), 'generativelanguage.googleapis.com'))->count();
+        $this->assertSame(2, $geminiRequests);
+
+        // Five minutes on, Gemini gets another chance.
+        $this->travel(6)->minutes();
+        Cache::put(DailyFoodFact::key(), 'Bananas are berries.', now()->addDay());
+        $this->post(route('entries.store'), ['description' => 'an apple']);
+
+        $this->assertGreaterThan(2, Http::recorded(fn ($request) => str_contains($request->url(), 'generativelanguage.googleapis.com'))->count());
+    }
+
     public function test_an_entry_is_still_logged_when_verification_fails(): void
     {
         Http::fake([

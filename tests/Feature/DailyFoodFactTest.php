@@ -20,6 +20,9 @@ class DailyFoodFactTest extends TestCase
 
         Http::preventStrayRequests();
 
+        // The AI is asked after the response has gone out; here that runs straight away.
+        $this->withoutDefer();
+
         config()->set('services.ai.provider', 'groq');
         config()->set('services.ai.fallback', null);
         config()->set('services.groq.key', 'test-key');
@@ -56,9 +59,39 @@ class DailyFoodFactTest extends TestCase
         return str_contains($request['messages'][1]['content'], 'fact-checker');
     }
 
+    /**
+     * Today's fact once things have settled: the first look shows a curated
+     * fact and sets the AI going, the second sees what the AI came back with.
+     */
     private function fact(): string
     {
+        app(DailyFoodFact::class)->today();
+
         return app(DailyFoodFact::class)->today();
+    }
+
+    public function test_a_page_never_waits_for_the_ai(): void
+    {
+        $this->withDefer();
+        $this->fakeAi('Vanilla comes from the seed pod of an orchid.');
+
+        // The first look of the day returns a curated fact at once, having asked the AI nothing yet.
+        $first = app(DailyFoodFact::class)->today();
+
+        $this->assertNotEmpty($first);
+        $this->assertNotSame('Vanilla comes from the seed pod of an orchid.', $first);
+        Http::assertNothingSent();
+    }
+
+    public function test_the_ai_fact_takes_over_from_the_next_look(): void
+    {
+        $this->fakeAi('Vanilla comes from the seed pod of an orchid.');
+
+        $first = app(DailyFoodFact::class)->today();
+        $second = app(DailyFoodFact::class)->today();
+
+        $this->assertNotSame($first, $second);
+        $this->assertSame('Vanilla comes from the seed pod of an orchid.', $second);
     }
 
     public function test_the_fact_is_written_by_the_ai_cleaned_and_cached_for_the_day(): void

@@ -8,9 +8,16 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use Throwable;
 
+use function Illuminate\Support\defer;
+
 /**
  * Provides one food fact or piece of food trivia per day, written by the AI
  * and cached so it is asked at most once daily.
+ *
+ * Asking the AI can take many seconds (and fail), so it never happens while a
+ * page is loading: the page gets a curated fact straight away, and the AI is
+ * asked after the response has been sent. Its fact shows from the next page
+ * load on.
  *
  * Three things keep it from repeating: the subject rotates through TOPICS by
  * calendar day, the AI is shown the facts used recently and told to avoid
@@ -130,19 +137,30 @@ class DailyFoodFact
             return $cached;
         }
 
-        $fact = $this->fromAi();
-        if ($fact !== null) {
-            Cache::put(self::key(), $fact, today()->endOfDay());
-            $this->remember($fact);
-
-            return $fact;
-        }
-
-        // AI unavailable — serve a curated fact, but retry the AI again soon.
+        // Nothing for today yet. Show a curated fact now and hold it for half
+        // an hour, which also stops other page loads from asking the AI at the
+        // same time; then ask the AI once this response is on its way.
         $fallback = $this->fallback();
         Cache::put(self::key(), $fallback, now()->addMinutes(30));
 
+        defer(fn () => $this->writeTodaysFact());
+
         return $fallback;
+    }
+
+    /**
+     * Ask the AI for today's fact and, if it gives a usable one, keep it for
+     * the rest of the day. If not, the curated fact stays until it lapses and
+     * the next page load triggers another try.
+     */
+    public function writeTodaysFact(): void
+    {
+        $fact = $this->fromAi();
+
+        if ($fact !== null) {
+            Cache::put(self::key(), $fact, today()->endOfDay());
+            $this->remember($fact);
+        }
     }
 
     /**
@@ -225,10 +243,11 @@ class DailyFoodFact
 
     private function clean(string $raw): string
     {
-        $fact = trim($raw);
-        $fact = trim($fact, "\"'“”‘’ \t\n\r");
-        $fact = preg_replace('/\s+/', ' ', $fact) ?? $fact;
-        $fact = preg_replace('/^did you know( that)?[:,?!.\s]*/i', '', $fact) ?? $fact;
+        // The /u flag keeps these working on whole characters; without it a
+        // multi-byte character could be cut in half and the text left invalid.
+        $fact = preg_replace('/^[\s"\'“”‘’]+|[\s"\'“”‘’]+$/u', '', $raw) ?? trim($raw);
+        $fact = preg_replace('/\s+/u', ' ', $fact) ?? $fact;
+        $fact = preg_replace('/^did you know( that)?[:,?!.\s]*/iu', '', $fact) ?? $fact;
 
         return Str::limit(Str::ucfirst($fact), self::MAX_LENGTH - 1, '…');
     }

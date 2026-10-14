@@ -16,10 +16,17 @@ use Illuminate\Support\Facades\Log;
  * for a cooldown period so subsequent requests skip straight to the secondary
  * instead of hammering the exhausted primary. Once the cooldown lapses the
  * primary is tried again automatically (self-healing when the quota resets).
+ *
+ * Any other failure (a 5xx, a timeout) opens the breaker too, but only
+ * briefly: those usually clear quickly, yet while they last every request
+ * would otherwise sit through the primary's slow failures before falling over.
  */
 class FallbackNutritionAssistant implements NutritionAssistant
 {
     private const BREAKER_KEY = 'ai:primary-unavailable';
+
+    /** How long to skip the primary after a failure that isn't a quota limit. */
+    private const OUTAGE_COOLDOWN_MINUTES = 5;
 
     public function __construct(
         private readonly NutritionAssistant $primary,
@@ -71,7 +78,7 @@ class FallbackNutritionAssistant implements NutritionAssistant
      */
     private function withFallback(string $operation, Closure $call): mixed
     {
-        // Primary is in cooldown after a recent quota hit — skip straight to it.
+        // Primary is in cooldown after a recent failure — go straight to the secondary.
         if ($this->breakerOpen() && $this->secondary->isConfigured()) {
             return $this->runSecondary($call);
         }
@@ -79,9 +86,7 @@ class FallbackNutritionAssistant implements NutritionAssistant
         try {
             return $call($this->primary);
         } catch (ProviderUnavailableException $e) {
-            if ($e->quotaExhausted) {
-                $this->openBreaker();
-            }
+            $this->openBreaker($e->quotaExhausted ? $this->cooldownMinutes : min($this->cooldownMinutes, self::OUTAGE_COOLDOWN_MINUTES));
 
             Log::warning("AI primary unavailable during {$operation}; using fallback provider.", [
                 'quota_exhausted' => $e->quotaExhausted,
@@ -110,10 +115,10 @@ class FallbackNutritionAssistant implements NutritionAssistant
         return (bool) $this->cache->get(self::BREAKER_KEY, false);
     }
 
-    private function openBreaker(): void
+    private function openBreaker(int $minutes): void
     {
-        if ($this->cooldownMinutes > 0) {
-            $this->cache->put(self::BREAKER_KEY, true, now()->addMinutes($this->cooldownMinutes));
+        if ($minutes > 0) {
+            $this->cache->put(self::BREAKER_KEY, true, now()->addMinutes($minutes));
         }
     }
 }

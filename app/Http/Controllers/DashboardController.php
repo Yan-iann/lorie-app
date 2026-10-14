@@ -22,9 +22,10 @@ class DashboardController extends Controller
             return redirect()->route('profile');
         }
 
-        // Fall back to today for a missing or malformed ?date= instead of erroring.
+        // Fall back to today for a missing, malformed or impossible ?date=
+        // (e.g. Feb 31, which Postgres refuses outright) instead of erroring.
         $requested = $request->query('date');
-        $date = is_string($requested) && Carbon::canBeCreatedFromFormat($requested, 'Y-m-d')
+        $date = is_string($requested) && $this->isRealDate($requested)
             ? $requested
             : today()->toDateString();
 
@@ -64,6 +65,15 @@ class DashboardController extends Controller
             'water' => $water,
             'week' => WeekSummary::for($user, $date),
         ]);
+    }
+
+    /**
+     * A YYYY-MM-DD string naming a day that actually exists.
+     */
+    private function isRealDate(string $value): bool
+    {
+        return preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $value, $parts) === 1
+            && checkdate((int) $parts[2], (int) $parts[3], (int) $parts[1]);
     }
 
     private function greeting(): string
